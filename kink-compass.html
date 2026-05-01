@@ -524,41 +524,7 @@
     .has-tip {
       cursor: help;
       border-bottom: 1px dotted var(--dim);
-      position: relative;
-    }
-    .has-tip::after {
-      content: attr(data-tip);
-      position: absolute;
-      bottom: calc(100% + 10px);
-      left: 50%;
-      transform: translateX(-50%);
-      width: max-content;
-      max-width: min(320px, 90vw);
-      background: var(--card-hi);
-      border: 1px solid var(--border-on);
-      border-radius: 3px;
-      padding: 10px 14px;
-      font-family: var(--sans);
-      font-size: 0.77rem;
-      font-weight: 300;
-      line-height: 1.72;
-      color: var(--text);
-      text-align: left;
-      white-space: normal;
-      pointer-events: none;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.15s ease, visibility 0.15s ease;
-      z-index: 9999;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.62);
-    }
-    .has-tip:hover::after,
-    .has-tip:focus::after {
-      opacity: 1;
-      visibility: visible;
-    }
-    @media (max-width: 560px) {
-      .has-tip::after { max-width: 80vw; }
+      text-decoration: none;
     }
 
     /* ========== MOBILE ========== */
@@ -1417,7 +1383,7 @@ function tipSpan(text) {
   const desc = TOOLTIPS[text];
   const safe = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return desc
-    ? `<span class="has-tip" data-tip="${escAttr(desc)}">${safe}</span>`
+    ? `<abbr class="has-tip" title="${escAttr(desc)}">${safe}</abbr>`
     : safe;
 }
 
