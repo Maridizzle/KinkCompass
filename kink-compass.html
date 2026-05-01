@@ -524,12 +524,16 @@
     .has-tip {
       cursor: help;
       border-bottom: 1px dotted var(--dim);
+      position: relative;
     }
-    #kc-tip {
-      position: fixed;
-      z-index: 9999;
-      max-width: 320px;
-      min-width: 160px;
+    .has-tip::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: min(320px, 90vw);
       background: var(--card-hi);
       border: 1px solid var(--border-on);
       border-radius: 3px;
@@ -539,13 +543,23 @@
       font-weight: 300;
       line-height: 1.72;
       color: var(--text);
+      text-align: left;
+      white-space: normal;
       pointer-events: none;
       opacity: 0;
-      transition: opacity 0.15s ease;
+      visibility: hidden;
+      transition: opacity 0.15s ease, visibility 0.15s ease;
+      z-index: 9999;
       box-shadow: 0 8px 32px rgba(0,0,0,0.62);
-      word-wrap: break-word;
     }
-    #kc-tip.vis { opacity: 1; }
+    .has-tip:hover::after,
+    .has-tip:focus::after {
+      opacity: 1;
+      visibility: visible;
+    }
+    @media (max-width: 560px) {
+      .has-tip::after { max-width: 80vw; }
+    }
 
     /* ========== MOBILE ========== */
     @media (max-width: 560px) {
@@ -654,8 +668,6 @@
     </div>
   </div>
 </div>
-
-<div id="kc-tip"></div>
 
 <script>
 // ============================================================
@@ -1417,63 +1429,6 @@ function tipSpan(text) {
   buildCatScreenFresh();
 })();
 
-// ============================================================
-// TOOLTIP ENGINE
-// ============================================================
-(function initTooltips() {
-  const tip = document.getElementById('kc-tip');
-  if (!tip) return;
-
-  let current = null;
-
-  function place(x, y) {
-    const pad = 14;
-    const rect = tip.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    let lx = x + pad;
-    let ly = y + pad;
-    if (lx + rect.width  > vw - 8) lx = x - rect.width  - pad;
-    if (ly + rect.height > vh - 8) ly = y - rect.height - pad;
-    tip.style.left = Math.max(8, lx) + 'px';
-    tip.style.top  = Math.max(8, ly) + 'px';
-  }
-
-  document.addEventListener('mousemove', e => {
-    const el = e.target.closest('[data-tip]');
-    if (el) {
-      if (el !== current) {
-        tip.textContent = el.dataset.tip;
-        tip.classList.add('vis');
-        current = el;
-      }
-      place(e.clientX, e.clientY);
-    } else {
-      tip.classList.remove('vis');
-      current = null;
-    }
-  });
-
-  document.addEventListener('mouseleave', () => {
-    tip.classList.remove('vis');
-    current = null;
-  });
-
-  document.addEventListener('touchstart', e => {
-    const el = e.target.closest('[data-tip]');
-    if (el && el !== current) {
-      e.preventDefault();
-      const t = e.touches[0];
-      tip.textContent = el.dataset.tip;
-      tip.classList.add('vis');
-      current = el;
-      place(t.clientX, t.clientY);
-    } else {
-      tip.classList.remove('vis');
-      current = null;
-    }
-  }, { passive: false });
-})();
 </script>
 </body>
 </html>
