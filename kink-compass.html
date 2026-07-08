@@ -253,21 +253,61 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 2px;
-      padding: 14px 18px;
+      padding: 16px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 14px;
       flex-wrap: wrap;
-      transition: border-color var(--ease);
+      transition: all var(--ease);
     }
-    .cat-row.has-interest { border-color: rgba(195,120,40,0.35); }
+    .cat-row:hover { border-color: rgba(195,120,40,0.4); background: var(--card-hi); }
+    .cat-row.has-interest {
+      border-color: rgba(195,120,40,0.45);
+      box-shadow: inset 0 0 24px rgba(195,120,40,0.04);
+    }
+    .cat-main {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+      min-width: 230px;
+    }
+    .cat-icon {
+      width: 46px; height: 46px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: rgba(195,120,40,0.07);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      transition: all var(--ease);
+    }
+    .cat-row.has-interest .cat-icon {
+      border-color: var(--border-on);
+      background: rgba(195,120,40,0.14);
+      box-shadow: 0 0 14px rgba(195,120,40,0.3);
+    }
+    .cat-info { flex: 1; min-width: 0; }
     .cat-name {
       font-family: var(--serif);
-      font-size: 1.08rem;
+      font-size: 1.12rem;
       color: var(--text);
-      flex: 1;
-      min-width: 130px;
+    }
+    .cat-preview {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-style: italic;
+      line-height: 1.55;
+      margin-top: 3px;
+      cursor: help;
+    }
+    .cat-preview .more {
+      color: var(--accent2);
+      font-style: normal;
+      white-space: nowrap;
     }
     .int-pills { display: flex; gap: 5px; flex-wrap: wrap; }
     .i-pill {
@@ -352,13 +392,15 @@
       font-family: var(--sans);
       color: var(--dim);
     }
-    .r-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .r-btn:hover { border-color: var(--accent); color: var(--accent); transform: scale(1.08); }
     .r-btn.on {
-      background: var(--accent);
+      background: linear-gradient(135deg, #9a5820, var(--accent2));
       border-color: var(--accent);
       color: var(--bg);
-      box-shadow: 0 0 7px rgba(195,120,40,0.45);
+      box-shadow: 0 0 9px rgba(195,120,40,0.5);
     }
+    .r-btn.mini { width: 24px; height: 24px; font-size: 0.62rem; }
+    .d-pill.mini { font-size: 0.6rem; padding: 4px 9px; }
 
     /* ========== NAV BUTTONS ========== */
     .nav-btns { display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
@@ -520,6 +562,169 @@
       font-size: 1.1rem;
     }
 
+    /* ========== SECTION ICONS ========== */
+    .sec-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: rgba(195,120,40,0.08);
+      font-size: 0.95rem;
+      margin-right: 10px;
+      vertical-align: -8px;
+    }
+
+    /* ========== REVIEW (ARE YOU SURE) ========== */
+    .rev-intro {
+      background: rgba(195,120,40,0.06);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 2px;
+      padding: 16px 20px;
+      margin-bottom: 34px;
+      font-size: 0.84rem;
+      line-height: 1.7;
+      color: var(--text);
+    }
+    .rev-intro strong { color: var(--accent3); font-weight: 500; }
+    .rev-section { margin-bottom: 32px; }
+    .rev-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+    .rev-chip {
+      border: 1px solid var(--border);
+      background: var(--card);
+      border-radius: 4px;
+      transition: all 0.18s ease;
+      max-width: 100%;
+    }
+    .rev-chip:hover { border-color: var(--accent); }
+    .rev-chip-name {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-family: var(--sans);
+      font-weight: 300;
+      font-size: 0.8rem;
+      padding: 8px 14px 8px 11px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      text-align: left;
+      transition: color 0.18s ease;
+    }
+    .rev-chip-name::before {
+      content: '+';
+      color: var(--dim);
+      font-size: 1rem;
+      line-height: 1;
+      transition: color 0.18s ease;
+    }
+    .rev-chip:hover .rev-chip-name { color: var(--accent2); }
+    .rev-chip:hover .rev-chip-name::before { color: var(--accent); }
+    .rev-chip.added {
+      border-color: var(--accent);
+      background: rgba(195,120,40,0.1);
+      box-shadow: 0 0 10px rgba(195,120,40,0.15);
+    }
+    .rev-chip.added .rev-chip-name { color: var(--accent3); }
+    .rev-chip.added .rev-chip-name::before { content: '\2713'; color: var(--accent2); font-size: 0.8rem; }
+    .rev-controls {
+      display: none;
+      padding: 2px 12px 11px;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .rev-chip.added .rev-controls { display: flex; }
+    .rev-mini { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+    .rev-mini-lbl {
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dim);
+      min-width: 34px;
+    }
+    .rev-clean {
+      text-align: center;
+      padding: 46px 24px;
+      font-family: var(--serif);
+      font-style: italic;
+      color: var(--muted);
+      font-size: 1.1rem;
+    }
+
+    /* ========== RESULTS SUMMARY ========== */
+    .sum-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 38px;
+    }
+    .sum-tile {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 20px 14px 16px;
+      text-align: center;
+    }
+    .sum-num {
+      font-family: var(--serif);
+      font-size: 2.1rem;
+      font-weight: 300;
+      color: var(--accent2);
+      line-height: 1;
+    }
+    .sum-lbl {
+      font-size: 0.64rem;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    /* ========== RESULTS METER BARS ========== */
+    .res-bar { display: flex; gap: 3px; align-items: center; }
+    .res-seg {
+      width: 21px; height: 8px;
+      border-radius: 4px;
+      background: rgba(195,120,40,0.13);
+      border: 1px solid rgba(195,120,40,0.1);
+    }
+    .res-seg.fill {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-color: transparent;
+      box-shadow: 0 0 6px rgba(195,120,40,0.4);
+    }
+    .res-rate-num {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-left: 6px;
+      min-width: 26px;
+      text-align: right;
+    }
+    .res-unrated {
+      font-size: 0.72rem;
+      font-style: italic;
+      color: var(--dim);
+    }
+
+    /* ========== EXPORT BUTTONS ========== */
+    .btn-copy.alt {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--muted);
+      margin-top: 28px;
+    }
+    .btn-copy.alt:hover {
+      background: rgba(195,120,40,0.06);
+      border-color: var(--accent);
+      color: var(--accent2);
+      box-shadow: none;
+    }
+
     /* ========== TOOLTIPS ========== */
     .has-tip {
       cursor: help;
@@ -537,7 +742,10 @@
       .d-pill { flex: 1; text-align: center; }
       .rate-dots { width: 100%; justify-content: space-between; }
       .r-btn { flex: 1; max-width: 52px; }
+      .r-btn.mini { flex: 0 0 auto; max-width: none; }
       .c-card { padding: 24px 20px; }
+      .cat-main { min-width: 0; width: 100%; }
+      .rev-chip { width: 100%; }
     }
   </style>
 </head>
@@ -608,7 +816,25 @@
     <div id="pass2-body"></div>
     <div class="nav-btns">
       <button class="btn-sec" onclick="goTo('pass1')">Back</button>
-      <button class="btn-pri" onclick="fromPass2()">See My Results</button>
+      <button class="btn-pri" onclick="fromPass2()">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== REVIEW (ARE YOU SURE) ========== -->
+<div id="screen-review" class="screen">
+  <div class="prog-bar" id="prog-review"></div>
+  <div class="inner">
+    <h1 class="s-title">Are You Sure?</h1>
+    <p class="s-sub">One last look before your results.</p>
+    <div class="rev-intro">
+      Below is <strong>everything you did NOT select</strong> &mdash; including categories you skipped entirely.
+      Give it a quick scan for any randoms you missed. Tap anything to add it, set give/receive, and rate it right here.
+    </div>
+    <div id="review-body"></div>
+    <div class="nav-btns">
+      <button class="btn-sec" onclick="backToPass2()">Back</button>
+      <button class="btn-pri" onclick="fromReview()">See My Results</button>
     </div>
   </div>
 </div>
@@ -629,7 +855,9 @@
       <textarea class="res-ta" id="extra-notes" placeholder="Anything else you want to share..."></textarea>
     </div>
     <div class="copy-wrap">
-      <button class="btn-copy" id="copy-btn" onclick="copyResults()">Copy My Results</button>
+      <button class="btn-copy" id="export-btn" onclick="exportImage()">Download as Image</button>
+      <div class="copy-note">Exports a shareable graphic of every answer with its scale</div>
+      <button class="btn-copy alt" id="copy-btn" onclick="copyResults()">Copy as Text</button>
       <div class="copy-note">Formats your results as plain text for easy sharing</div>
     </div>
   </div>
@@ -751,6 +979,28 @@ const CATS = [
     'Body worship (feet, ass, etc.)', 'Aftercare rituals'
   ]}
 ];
+
+const CAT_ICONS = {
+  bondage:     '🪢',
+  impact:      '💥',
+  sensory:     '🪶',
+  power:       '👑',
+  roleplay:    '🎭',
+  humiliation: '🙇',
+  exhib:       '👁️',
+  orgasm:      '⏳',
+  dep:         '🕶️',
+  pet:         '🐾',
+  medical:     '🩺',
+  water:       '💧',
+  cum:         '💦',
+  wax_fire:    '🔥',
+  breath:      '🌬️',
+  ageplay:     '🧸',
+  general:     '✨'
+};
+
+function catIcon(id) { return CAT_ICONS[id] || '✦'; }
 
 // ============================================================
 // TOOLTIP DESCRIPTIONS
@@ -984,10 +1234,11 @@ function itemKey(catId, item) {
 // ============================================================
 // NAVIGATION
 // ============================================================
-const STEPS = ['role', 'categories', 'pass1', 'pass2', 'results'];
+const STEPS = ['role', 'categories', 'pass1', 'pass2', 'review', 'results'];
 const STEP_LABELS = {
   role: 'Role', categories: 'Categories',
-  pass1: 'Direction', pass2: 'Rating', results: 'Results'
+  pass1: 'Direction', pass2: 'Rating',
+  review: 'Last Look', results: 'Results'
 };
 
 function goTo(id) {
@@ -1056,6 +1307,18 @@ function fromRole() {
 // ============================================================
 // CATEGORIES
 // ============================================================
+function escHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function catPreview(cat) {
+  const shown = cat.items.slice(0, 3);
+  const more = cat.items.length - shown.length;
+  const names = shown.map(escHtml).join(' &middot; ');
+  return names + (more > 0 ? ` <span class="more">+${more} more</span>` : '');
+}
+
+let catListBound = false;
 function buildCatScreen() {
   const list = document.getElementById('cat-list');
   list.innerHTML = '';
@@ -1064,7 +1327,13 @@ function buildCatScreen() {
     const hasInt = S.catInterest[cat.id] && S.catInterest[cat.id] !== 'none';
     row.className = 'cat-row' + (hasInt ? ' has-interest' : '');
     row.innerHTML = `
-      <div class="cat-name">${tipSpan(cat.name)}</div>
+      <div class="cat-main">
+        <div class="cat-icon">${catIcon(cat.id)}</div>
+        <div class="cat-info">
+          <div class="cat-name">${tipSpan(cat.name)}</div>
+          <div class="cat-preview" title="Includes: ${escAttr(cat.items.join(', '))}">${catPreview(cat)}</div>
+        </div>
+      </div>
       <div class="int-pills" data-cat="${cat.id}">
         ${INT_LEVELS.map(lvl =>
           `<button class="i-pill${S.catInterest[cat.id] === lvl.val ? ' on' : ''}"
@@ -1074,46 +1343,9 @@ function buildCatScreen() {
     list.appendChild(row);
   });
 
-  // event delegation
-  document.getElementById('cat-list').addEventListener('click', e => {
-    const btn = e.target.closest('.i-pill');
-    if (!btn) return;
-    const catId = btn.dataset.cat;
-    const val = btn.dataset.val;
-    S.catInterest[catId] = val;
-    // update pills for this cat
-    document.querySelectorAll(`.i-pill[data-cat="${catId}"]`).forEach(b => {
-      b.classList.toggle('on', b.dataset.val === val);
-    });
-    // update row border
-    const row = btn.closest('.cat-row');
-    if (row) row.classList.toggle('has-interest', val !== 'none');
-  }, { once: false });
-}
-
-// prevent double-binding by replacing the element
-function buildCatScreenFresh() {
-  const old = document.getElementById('cat-list');
-  const fresh = old.cloneNode(false);
-  old.parentNode.replaceChild(fresh, old);
-  document.getElementById('cat-list').id = 'cat-list';
-
-  CATS.forEach(cat => {
-    const row = document.createElement('div');
-    const hasInt = S.catInterest[cat.id] && S.catInterest[cat.id] !== 'none';
-    row.className = 'cat-row' + (hasInt ? ' has-interest' : '');
-    row.innerHTML = `
-      <div class="cat-name">${tipSpan(cat.name)}</div>
-      <div class="int-pills" data-cat="${cat.id}">
-        ${INT_LEVELS.map(lvl =>
-          `<button class="i-pill${S.catInterest[cat.id] === lvl.val ? ' on' : ''}"
-            data-cat="${cat.id}" data-val="${lvl.val}">${lvl.label}</button>`
-        ).join('')}
-      </div>`;
-    document.getElementById('cat-list').appendChild(row);
-  });
-
-  document.getElementById('cat-list').addEventListener('click', e => {
+  if (catListBound) return;
+  catListBound = true;
+  list.addEventListener('click', e => {
     const btn = e.target.closest('.i-pill');
     if (!btn) return;
     const catId = btn.dataset.cat;
@@ -1144,13 +1376,14 @@ function activeCats() {
   return CATS.filter(c => S.catInterest[c.id] && S.catInterest[c.id] !== 'none');
 }
 
+let pass1Bound = false;
 function buildPass1() {
   const body = document.getElementById('pass1-body');
   body.innerHTML = '';
   activeCats().forEach(cat => {
     const sec = document.createElement('div');
     sec.className = 'pass-section';
-    sec.innerHTML = `<div class="ps-title">${tipSpan(cat.name)}</div>`;
+    sec.innerHTML = `<div class="ps-title"><span class="sec-icon">${catIcon(cat.id)}</span>${tipSpan(cat.name)}</div>`;
     cat.items.forEach(item => {
       const key = itemKey(cat.id, item);
       const row = document.createElement('div');
@@ -1168,6 +1401,8 @@ function buildPass1() {
     body.appendChild(sec);
   });
 
+  if (pass1Bound) return;
+  pass1Bound = true;
   body.addEventListener('click', e => {
     const btn = e.target.closest('.d-pill');
     if (!btn) return;
@@ -1193,12 +1428,15 @@ function fromPass1() {
 // ============================================================
 // PASS 2
 // ============================================================
+let pass2Bound = false;
 function buildPass2() {
   const body = document.getElementById('pass2-body');
   body.innerHTML = '';
   let any = false;
 
-  activeCats().forEach(cat => {
+  // all categories, not just active: review-screen additions may
+  // come from categories that were skipped on the interest step
+  CATS.forEach(cat => {
     const selItems = cat.items.filter(item => {
       const d = S.itemDir[itemKey(cat.id, item)];
       return d && d !== 'no';
@@ -1208,7 +1446,7 @@ function buildPass2() {
 
     const sec = document.createElement('div');
     sec.className = 'pass-section';
-    sec.innerHTML = `<div class="ps-title">${tipSpan(cat.name)}</div>`;
+    sec.innerHTML = `<div class="ps-title"><span class="sec-icon">${catIcon(cat.id)}</span>${tipSpan(cat.name)}</div>`;
 
     selItems.forEach(item => {
       const key = itemKey(cat.id, item);
@@ -1232,19 +1470,132 @@ function buildPass2() {
     body.innerHTML = '<div class="empty-msg">No items to rate. Go back and make some selections.</div>';
   }
 
+  if (pass2Bound) return;
+  pass2Bound = true;
   body.addEventListener('click', e => {
     const btn = e.target.closest('.r-btn');
     if (!btn) return;
     const key = btn.dataset.key;
     const n = parseInt(btn.dataset.n);
     S.itemRate[key] = n;
-    document.querySelectorAll(`.r-btn[data-key="${escAttr(key)}"]`).forEach((b, i) => {
+    btn.closest('.rate-dots').querySelectorAll('.r-btn').forEach((b, i) => {
       b.classList.toggle('on', i < n);
     });
   });
 }
 
 function fromPass2() {
+  buildReview();
+  goTo('review');
+}
+
+// ============================================================
+// REVIEW -- "ARE YOU SURE?" (everything NOT selected)
+// ============================================================
+const REV_DIRS = DIRS.filter(d => d.val !== 'no');
+
+let reviewBound = false;
+function buildReview() {
+  const body = document.getElementById('review-body');
+  body.innerHTML = '';
+  let total = 0;
+
+  CATS.forEach(cat => {
+    const missed = cat.items.filter(item => {
+      const d = S.itemDir[itemKey(cat.id, item)];
+      return !d || d === 'no';
+    });
+    if (missed.length === 0) return;
+    total += missed.length;
+
+    const sec = document.createElement('div');
+    sec.className = 'rev-section';
+    sec.innerHTML = `<div class="ps-title"><span class="sec-icon">${catIcon(cat.id)}</span>${tipSpan(cat.name)}</div>`;
+
+    const chips = document.createElement('div');
+    chips.className = 'rev-chips';
+    missed.forEach(item => {
+      const key = itemKey(cat.id, item);
+      const chip = document.createElement('div');
+      chip.className = 'rev-chip';
+      chip.dataset.key = key;
+      chip.innerHTML = `
+        <button type="button" class="rev-chip-name">${tipSpan(item)}</button>
+        <div class="rev-controls">
+          <div class="rev-mini">
+            <span class="rev-mini-lbl">Dir</span>
+            ${REV_DIRS.map(d =>
+              `<button type="button" class="d-pill mini" data-dir="${d.val}">${d.label}</button>`
+            ).join('')}
+          </div>
+          <div class="rev-mini">
+            <span class="rev-mini-lbl">Rate</span>
+            ${[1,2,3,4,5].map(n =>
+              `<button type="button" class="r-btn mini" data-n="${n}">${n}</button>`
+            ).join('')}
+          </div>
+        </div>`;
+      chips.appendChild(chip);
+    });
+    sec.appendChild(chips);
+    body.appendChild(sec);
+  });
+
+  if (total === 0) {
+    body.innerHTML = '<div class="rev-clean">Nothing left unselected &mdash; you covered it all.</div>';
+  }
+
+  if (reviewBound) return;
+  reviewBound = true;
+  body.addEventListener('click', e => {
+    const chip = e.target.closest('.rev-chip');
+    if (!chip) return;
+    const key = chip.dataset.key;
+
+    const dirBtn = e.target.closest('.d-pill.mini');
+    if (dirBtn) {
+      S.itemDir[key] = dirBtn.dataset.dir;
+      chip.querySelectorAll('.d-pill.mini').forEach(b => {
+        b.classList.toggle('on', b.dataset.dir === dirBtn.dataset.dir);
+      });
+      return;
+    }
+
+    const rateBtn = e.target.closest('.r-btn.mini');
+    if (rateBtn) {
+      const n = parseInt(rateBtn.dataset.n);
+      S.itemRate[key] = n;
+      chip.querySelectorAll('.r-btn.mini').forEach((b, i) => {
+        b.classList.toggle('on', i < n);
+      });
+      return;
+    }
+
+    if (e.target.closest('.rev-chip-name')) {
+      if (chip.classList.contains('added')) {
+        // un-add
+        delete S.itemDir[key];
+        delete S.itemRate[key];
+        chip.classList.remove('added');
+        chip.querySelectorAll('.d-pill.mini, .r-btn.mini').forEach(b => b.classList.remove('on'));
+      } else {
+        // quick-add, defaulting to Both
+        S.itemDir[key] = 'both';
+        chip.classList.add('added');
+        chip.querySelectorAll('.d-pill.mini').forEach(b => {
+          b.classList.toggle('on', b.dataset.dir === 'both');
+        });
+      }
+    }
+  });
+}
+
+function backToPass2() {
+  buildPass2(); // rebuild so anything added on review shows up for rating
+  goTo('pass2');
+}
+
+function fromReview() {
   buildResults();
   goTo('results');
 }
@@ -1252,12 +1603,11 @@ function fromPass2() {
 // ============================================================
 // RESULTS
 // ============================================================
-function buildResults() {
-  document.getElementById('res-role').textContent = S.role || 'Not specified';
-  const body = document.getElementById('res-body');
-  body.innerHTML = '';
-
-  activeCats().forEach(cat => {
+// Collects across ALL categories (not just active ones) so items
+// grabbed on the review screen from skipped categories still count.
+function collectResults() {
+  const out = [];
+  CATS.forEach(cat => {
     const items = cat.items
       .filter(item => {
         const d = S.itemDir[itemKey(cat.id, item)];
@@ -1269,24 +1619,62 @@ function buildResults() {
       })
       .sort((a, b) => b.rate - a.rate);
 
-    if (items.length === 0) return;
+    if (items.length > 0) out.push({ id: cat.id, name: cat.name, items });
+  });
+  return out;
+}
 
+function buildResults() {
+  document.getElementById('res-role').textContent = S.role || 'Not specified';
+  const body = document.getElementById('res-body');
+  body.innerHTML = '';
+
+  const data = collectResults();
+  const allItems = data.flatMap(sec => sec.items);
+  const fives = allItems.filter(i => i.rate === 5).length;
+  const topCat = data.slice().sort((a, b) => b.items.length - a.items.length)[0];
+
+  if (allItems.length > 0) {
+    const sum = document.createElement('div');
+    sum.className = 'sum-grid';
+    sum.innerHTML = `
+      <div class="sum-tile">
+        <div class="sum-num">${allItems.length}</div>
+        <div class="sum-lbl">Kinks Selected</div>
+      </div>
+      <div class="sum-tile">
+        <div class="sum-num">${fives}</div>
+        <div class="sum-lbl">Rated 5 / 5</div>
+      </div>
+      <div class="sum-tile">
+        <div class="sum-num">${catIcon(topCat.id)}</div>
+        <div class="sum-lbl">Top Category<br>${escHtml(topCat.name)}</div>
+      </div>`;
+    body.appendChild(sum);
+  } else {
+    body.innerHTML = '<div class="empty-msg">No selections yet. Go back and pick a few things that interest you.</div>';
+    return;
+  }
+
+  data.forEach(secData => {
     const sec = document.createElement('div');
     sec.className = 'res-section';
-    sec.innerHTML = `<div class="res-sec-title">${tipSpan(cat.name)}</div>`;
+    sec.innerHTML = `<div class="res-sec-title"><span class="sec-icon">${catIcon(secData.id)}</span>${tipSpan(secData.name)}</div>`;
 
-    items.forEach(item => {
+    secData.items.forEach(item => {
       const dirLabel = DIRS.find(d => d.val === item.dir)?.label || item.dir;
-      const stars = item.rate > 0
-        ? '&#9733;'.repeat(item.rate) + '<span style="opacity:0.25">&#9733;</span>'.repeat(5 - item.rate)
-        : '<span style="opacity:0.35;font-style:italic;font-size:0.78rem">not rated</span>';
+      const meter = item.rate > 0
+        ? `<span class="res-bar">${[1,2,3,4,5].map(n =>
+            `<span class="res-seg${n <= item.rate ? ' fill' : ''}"></span>`).join('')}
+           </span><span class="res-rate-num">${item.rate}/5</span>`
+        : '<span class="res-unrated">not rated</span>';
       const row = document.createElement('div');
       row.className = 'res-item';
       row.innerHTML = `
         <div class="res-item-name">${tipSpan(item.name)}</div>
         <div class="res-meta">
           <span class="res-dir">${dirLabel}</span>
-          <span class="res-stars">${stars}</span>
+          ${meter}
         </div>`;
       sec.appendChild(row);
     });
@@ -1306,22 +1694,9 @@ function copyResults() {
   lines.push('Role: ' + (S.role || 'Not specified'));
   lines.push('');
 
-  activeCats().forEach(cat => {
-    const items = cat.items
-      .filter(item => {
-        const d = S.itemDir[itemKey(cat.id, item)];
-        return d && d !== 'no';
-      })
-      .map(item => {
-        const key = itemKey(cat.id, item);
-        return { name: item, dir: S.itemDir[key], rate: S.itemRate[key] || 0 };
-      })
-      .sort((a, b) => b.rate - a.rate);
-
-    if (items.length === 0) return;
-
+  collectResults().forEach(cat => {
     lines.push('--- ' + cat.name.toUpperCase() + ' ---');
-    items.forEach(item => {
+    cat.items.forEach(item => {
       const dirLabel = DIRS.find(d => d.val === item.dir)?.label || item.dir;
       const stars = item.rate > 0
         ? '*'.repeat(item.rate) + '.'.repeat(5 - item.rate)
@@ -1373,6 +1748,235 @@ function fallbackCopy(text, cb) {
 }
 
 // ============================================================
+// IMAGE EXPORT -- renders all answers + scales to a PNG graphic
+// ============================================================
+const EX = {
+  bg:      '#0e0805',
+  card:    '#1c110a',
+  border:  'rgba(195,130,50,0.28)',
+  accent:  '#c07830',
+  accent2: '#e0a850',
+  accent3: '#f5d090',
+  text:    '#f0dfc5',
+  muted:   '#8a6a48',
+  dim:     '#5a3e25',
+  segOff:  'rgba(195,120,40,0.16)'
+};
+
+function exRoundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function exWrapText(ctx, text, maxW) {
+  const lines = [];
+  text.split('\n').forEach(raw => {
+    const words = raw.split(/\s+/).filter(Boolean);
+    if (words.length === 0) { lines.push(''); return; }
+    let line = '';
+    words.forEach(word => {
+      const test = line ? line + ' ' + word : word;
+      if (ctx.measureText(test).width > maxW && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = test;
+      }
+    });
+    lines.push(line);
+  });
+  return lines;
+}
+
+function exFitText(ctx, text, maxW) {
+  if (ctx.measureText(text).width <= maxW) return text;
+  let t = text;
+  while (t.length > 1 && ctx.measureText(t + '…').width > maxW) {
+    t = t.slice(0, -1);
+  }
+  return t + '…';
+}
+
+async function exportImage() {
+  const btn = document.getElementById('export-btn');
+  btn.textContent = 'Rendering…';
+  try { await document.fonts.ready; } catch (e) { /* fonts optional */ }
+
+  const data = collectResults();
+  const hardLimits = document.getElementById('hard-limits').value.trim();
+  const extraNotes = document.getElementById('extra-notes').value.trim();
+
+  const W = 1080, PAD = 64, SCALE = 2;
+  const ROW_H = 46, SEC_HEAD = 66, SEC_GAP = 26;
+  const serif = "'Cormorant Garamond', Georgia, serif";
+  const sans = "'Jost', system-ui, sans-serif";
+
+  const canvas = document.createElement('canvas');
+  let ctx = canvas.getContext('2d');
+
+  // ---- measure pass (for notes wrapping) ----
+  ctx.font = '300 17px ' + sans;
+  const limitLines = hardLimits ? exWrapText(ctx, hardLimits, W - PAD * 2 - 56) : [];
+  const noteLines = extraNotes ? exWrapText(ctx, extraNotes, W - PAD * 2 - 56) : [];
+
+  let H = 210; // header
+  data.forEach(sec => { H += SEC_HEAD + sec.items.length * ROW_H + SEC_GAP; });
+  if (limitLines.length) H += 66 + limitLines.length * 26 + 24;
+  if (noteLines.length) H += 66 + noteLines.length * 26 + 24;
+  H += 90; // footer
+
+  canvas.width = W * SCALE;
+  canvas.height = H * SCALE;
+  ctx = canvas.getContext('2d');
+  ctx.scale(SCALE, SCALE);
+
+  // ---- background ----
+  ctx.fillStyle = EX.bg;
+  ctx.fillRect(0, 0, W, H);
+  const glow = ctx.createRadialGradient(W * 0.2, 240, 0, W * 0.2, 240, 700);
+  glow.addColorStop(0, 'rgba(170,90,20,0.12)');
+  glow.addColorStop(1, 'rgba(170,90,20,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  // ---- header ----
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = EX.accent3;
+  ctx.font = '300 58px ' + serif;
+  ctx.fillText('Kink Compass', W / 2, 96);
+  ctx.fillStyle = EX.muted;
+  ctx.font = 'italic 300 21px ' + serif;
+  ctx.fillText(S.role || 'Not specified', W / 2, 134);
+  ctx.strokeStyle = EX.border;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(PAD, 168);
+  ctx.lineTo(W - PAD, 168);
+  ctx.stroke();
+
+  let y = 210;
+  const meterW = 5 * 24 + 4 * 5;          // 5 segments + gaps
+  const meterX = W - PAD - meterW;        // right-aligned meter
+  const dirX = meterX - 24;               // direction pill sits left of meter
+
+  data.forEach(sec => {
+    // section header
+    ctx.textAlign = 'left';
+    ctx.font = '26px ' + serif;
+    ctx.fillStyle = EX.accent2;
+    ctx.fillText(catIcon(sec.id) + '  ' + sec.name, PAD, y + 26);
+    ctx.strokeStyle = EX.border;
+    ctx.beginPath();
+    ctx.moveTo(PAD, y + 40);
+    ctx.lineTo(W - PAD, y + 40);
+    ctx.stroke();
+    y += SEC_HEAD;
+
+    sec.items.forEach(item => {
+      const rowMid = y + ROW_H / 2;
+
+      // faint row separator
+      ctx.strokeStyle = 'rgba(195,120,40,0.07)';
+      ctx.beginPath();
+      ctx.moveTo(PAD, y + ROW_H);
+      ctx.lineTo(W - PAD, y + ROW_H);
+      ctx.stroke();
+
+      // direction pill (right of name, left of meter)
+      const dirLabel = (DIRS.find(d => d.val === item.dir)?.label || item.dir).toUpperCase();
+      ctx.font = '500 11px ' + sans;
+      const dw = ctx.measureText(dirLabel).width + 24;
+      exRoundRect(ctx, dirX - dw, rowMid - 12, dw, 24, 12);
+      ctx.strokeStyle = 'rgba(195,120,40,0.4)';
+      ctx.stroke();
+      ctx.fillStyle = EX.accent;
+      ctx.textAlign = 'center';
+      ctx.fillText(dirLabel, dirX - dw / 2, rowMid + 4);
+
+      // item name (truncated to available space)
+      ctx.textAlign = 'left';
+      ctx.font = '300 17px ' + sans;
+      ctx.fillStyle = EX.text;
+      ctx.fillText(exFitText(ctx, item.name, dirX - dw - PAD - 20), PAD, rowMid + 6);
+
+      // rating meter: 5 segments
+      for (let n = 1; n <= 5; n++) {
+        const sx = meterX + (n - 1) * 29;
+        exRoundRect(ctx, sx, rowMid - 5, 24, 10, 5);
+        if (item.rate >= n) {
+          const g = ctx.createLinearGradient(sx, 0, sx + 24, 0);
+          g.addColorStop(0, EX.accent);
+          g.addColorStop(1, EX.accent2);
+          ctx.fillStyle = g;
+          ctx.fill();
+        } else {
+          ctx.fillStyle = EX.segOff;
+          ctx.fill();
+        }
+      }
+      // numeric scale under the meter
+      ctx.font = '300 10px ' + sans;
+      ctx.fillStyle = item.rate > 0 ? EX.muted : EX.dim;
+      ctx.textAlign = 'right';
+      ctx.fillText(item.rate > 0 ? item.rate + ' / 5' : 'unrated', W - PAD, rowMid + 18);
+      ctx.textAlign = 'left';
+
+      y += ROW_H;
+    });
+    y += SEC_GAP;
+  });
+
+  // ---- notes blocks ----
+  const notesBlock = (title, lines) => {
+    const bh = 50 + lines.length * 26;
+    ctx.fillStyle = EX.card;
+    exRoundRect(ctx, PAD, y, W - PAD * 2, bh, 3);
+    ctx.fill();
+    ctx.strokeStyle = EX.border;
+    ctx.stroke();
+    ctx.font = '500 12px ' + sans;
+    ctx.fillStyle = EX.muted;
+    ctx.fillText(title.toUpperCase(), PAD + 28, y + 32);
+    ctx.font = '300 17px ' + sans;
+    ctx.fillStyle = EX.text;
+    lines.forEach((ln, i) => ctx.fillText(ln, PAD + 28, y + 60 + i * 26));
+    y += bh + 24;
+  };
+  if (limitLines.length) notesBlock('Hard Limits', limitLines);
+  if (noteLines.length) notesBlock('Notes', noteLines);
+
+  // ---- footer ----
+  ctx.textAlign = 'center';
+  ctx.font = 'italic 300 15px ' + serif;
+  ctx.fillStyle = EX.dim;
+  const dateStr = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  ctx.fillText('Created with Kink Compass • ' + dateStr, W / 2, H - 44);
+
+  // ---- download ----
+  canvas.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'kink-compass-' + new Date().toISOString().slice(0, 10) + '.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    btn.textContent = 'Downloaded!';
+    btn.classList.add('done');
+    setTimeout(() => {
+      btn.textContent = 'Download as Image';
+      btn.classList.remove('done');
+    }, 2600);
+  }, 'image/png');
+}
+
+// ============================================================
 // UTIL
 // ============================================================
 function escAttr(s) {
@@ -1388,11 +1992,11 @@ function tipSpan(text) {
 }
 
 // ============================================================
-// INIT -- wire category screen fresh on each visit
+// INIT
 // ============================================================
 (function init() {
   buildRoleScreen();
-  buildCatScreenFresh();
+  buildCatScreen();
 })();
 
 </script>
