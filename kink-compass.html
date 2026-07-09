@@ -791,6 +791,32 @@
       text-decoration: none;
     }
 
+    /* ---- MOBILE TAP/LONG-PRESS TOOLTIP POPUP ---- */
+    #tip-popup {
+      position: fixed;
+      z-index: 500;
+      max-width: min(320px, calc(100vw - 32px));
+      background: var(--card-hi);
+      border: 1px solid var(--border-on);
+      border-radius: 4px;
+      padding: 13px 16px;
+      font-family: var(--sans);
+      font-weight: 300;
+      font-size: 0.78rem;
+      line-height: 1.6;
+      color: var(--text);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      opacity: 0;
+      transform: translateY(4px);
+      pointer-events: none;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+    #tip-popup.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
     /* ========== MOBILE ========== */
     @media (max-width: 560px) {
       .cat-row { flex-direction: column; align-items: flex-start; }
@@ -2188,6 +2214,87 @@ function tipSpan(text) {
     ? `<abbr class="has-tip" title="${escAttr(desc)}">${safe}</abbr>`
     : safe;
 }
+
+// ============================================================
+// MOBILE TOOLTIPS -- native `title` only shows on desktop hover,
+// so touch devices get a long-press popup instead. A quick tap
+// still falls through to whatever the element normally does
+// (select a role, quick-add on the review screen, etc.) so this
+// never hijacks the existing tap-to-choose interactions.
+// ============================================================
+const TIP_HOLD_MS = 380;
+let tipTimer = null;
+let tipSuppressClick = false;
+let tipPopupEl = null;
+let tipActiveEl = null;
+
+function ensureTipPopup() {
+  if (!tipPopupEl) {
+    tipPopupEl = document.createElement('div');
+    tipPopupEl.id = 'tip-popup';
+    tipPopupEl.setAttribute('role', 'tooltip');
+    document.body.appendChild(tipPopupEl);
+  }
+  return tipPopupEl;
+}
+
+function positionTipPopup(el) {
+  const pop = tipPopupEl;
+  const r = el.getBoundingClientRect();
+  const margin = 12;
+  const pw = pop.offsetWidth;
+  const ph = pop.offsetHeight;
+  let left = r.left + r.width / 2 - pw / 2;
+  left = Math.max(margin, Math.min(left, window.innerWidth - pw - margin));
+  let top = r.bottom + 10;
+  if (top + ph > window.innerHeight - margin) {
+    top = Math.max(margin, r.top - ph - 10);
+  }
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+}
+
+function showTipPopup(el) {
+  const desc = el.getAttribute('title');
+  if (!desc) return;
+  const pop = ensureTipPopup();
+  pop.textContent = desc;
+  tipActiveEl = el;
+  positionTipPopup(el);
+  pop.classList.add('show');
+}
+
+function hideTipPopup() {
+  if (tipPopupEl) tipPopupEl.classList.remove('show');
+  tipActiveEl = null;
+}
+
+document.addEventListener('pointerdown', e => {
+  if (tipActiveEl && !e.target.closest('#tip-popup')) hideTipPopup();
+  const el = e.target.closest && e.target.closest('.has-tip');
+  if (!el) return;
+  tipSuppressClick = false;
+  clearTimeout(tipTimer);
+  tipTimer = setTimeout(() => {
+    showTipPopup(el);
+    tipSuppressClick = true;
+  }, TIP_HOLD_MS);
+});
+document.addEventListener('pointerup', () => clearTimeout(tipTimer));
+document.addEventListener('pointercancel', () => clearTimeout(tipTimer));
+
+// swallow the click that follows a long-press so it doesn't also
+// trigger the element's normal select/quick-add behavior
+document.addEventListener('click', e => {
+  if (tipSuppressClick) {
+    e.preventDefault();
+    e.stopPropagation();
+    tipSuppressClick = false;
+  }
+}, true);
+
+window.addEventListener('scroll', hideTipPopup, true);
+window.addEventListener('resize', hideTipPopup);
 
 // ============================================================
 // INIT
