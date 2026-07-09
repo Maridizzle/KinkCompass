@@ -655,6 +655,41 @@
       font-size: 1.1rem;
     }
 
+    /* ---- HARD LIMIT TOGGLE ---- */
+    .rev-chip-head {
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 0;
+    }
+    .rev-chip-head .rev-chip-name { flex: 1; }
+    .limit-btn {
+      background: transparent;
+      border: none;
+      border-left: 1px solid var(--border);
+      color: var(--dim);
+      font-family: var(--sans);
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 8px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.18s ease;
+    }
+    .limit-btn:hover { color: #d07070; }
+    .limit-btn.on {
+      color: #f0a0a0;
+      background: rgba(180,50,50,0.16);
+    }
+    .rev-chip.limit {
+      border-color: rgba(190,60,60,0.55);
+      background: rgba(150,40,40,0.09);
+      box-shadow: 0 0 10px rgba(150,40,40,0.15);
+    }
+    .rev-chip.limit .rev-chip-name { color: #e0a0a0; }
+    .rev-chip.limit .rev-chip-name::before { content: '\26D4'; color: #d07070; font-size: 0.72rem; }
+
     /* ========== RESULTS SUMMARY ========== */
     .sum-grid {
       display: grid;
@@ -709,6 +744,30 @@
       font-size: 0.72rem;
       font-style: italic;
       color: var(--dim);
+    }
+
+    /* ========== LIMITS SECTION ========== */
+    .sum-tile.limit-tile { border-color: rgba(190,60,60,0.4); }
+    .sum-num.limit-num { color: #e08080; }
+    .res-section.limits-section {
+      border: 1px solid rgba(190,60,60,0.3);
+      background: rgba(150,40,40,0.05);
+      border-radius: 2px;
+      padding: 20px 22px;
+    }
+    .res-sec-title.res-limits-title {
+      color: #e08080;
+      border-bottom-color: rgba(190,60,60,0.35);
+    }
+    .res-limit-tag {
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #e0a0a0;
+      border: 1px solid rgba(190,60,60,0.4);
+      padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
     }
 
     /* ========== EXPORT BUTTONS ========== */
@@ -829,7 +888,9 @@
     <p class="s-sub">One last look before your results.</p>
     <div class="rev-intro">
       Below is <strong>everything you did NOT select</strong> &mdash; including categories you skipped entirely.
-      Give it a quick scan for any randoms you missed. Tap anything to add it, set give/receive, and rate it right here.
+      Give it a quick scan for any randoms you missed. Tap a name to add it, set give/receive, and rate it right here &mdash;
+      or mark it <strong>Hard Limit</strong> if it's an absolute no. Hard limits are pulled into their own
+      <strong>Limits</strong> section on your results.
     </div>
     <div id="review-body"></div>
     <div class="nav-btns">
@@ -849,8 +910,8 @@
     <div id="res-body"></div>
     <div class="res-notes">
       <div class="res-notes-title">Final Notes</div>
-      <label class="field-label">Hard Limits</label>
-      <textarea class="res-ta" id="hard-limits" placeholder="List any absolute nos here..."></textarea>
+      <label class="field-label">Additional Hard Limits</label>
+      <textarea class="res-ta" id="hard-limits" placeholder="Anything not already caught above &mdash; list any other absolute nos here..."></textarea>
       <label class="field-label">Additional Notes, Fantasies, or Experience Level</label>
       <textarea class="res-ta" id="extra-notes" placeholder="Anything else you want to share..."></textarea>
     </div>
@@ -891,6 +952,19 @@ const DIRS = [
 ];
 
 const CATS = [
+  { id: 'romance', name: 'Romance & Affection', items: [
+    'Candlelit dinners', 'Slow dancing', 'Love notes or letters',
+    'Surprise dates', 'Cuddling on the couch', 'Holding hands in public',
+    'Forehead / cheek kisses', 'Morning affection', 'Giving or receiving flowers',
+    'Pillow talk', 'Bubble baths together', 'Slow, lingering goodbyes'
+  ]},
+  { id: 'vanilla', name: 'Vanilla & Everyday Intimacy', items: [
+    'Slow, unhurried sex', 'Making out / extended kissing', 'Spooning',
+    'Showering together', 'Sensual massage (non-kink)', 'Trying new positions',
+    'Skinny dipping', 'Lazy mornings in bed', 'Cooking a meal together',
+    'Reading or relaxing in bed together', 'Falling asleep in each other\'s arms',
+    'Gentle teasing / playful affection'
+  ]},
   { id: 'bondage', name: 'Bondage & Restraint', items: [
     'Rope bondage', 'Handcuffs / cuffs', 'Spreader bars',
     'Hogtie', 'Suspension bondage', 'Chest / body harness',
@@ -981,6 +1055,8 @@ const CATS = [
 ];
 
 const CAT_ICONS = {
+  romance:     '🌹',
+  vanilla:     '💗',
   bondage:     '🪢',
   impact:      '💥',
   sensory:     '🪶',
@@ -1065,6 +1141,8 @@ const TOOLTIPS = {
   'Exploring / Not Sure': 'No established role identity; currently discovering individual preferences through experience, reading, or community engagement.',
 
   // CATEGORIES
+  'Romance & Affection': 'Gestures of tenderness and courtship that build emotional closeness &mdash; small acts of care, attention, and thoughtfulness that don\'t require a kink framework to feel meaningful.',
+  'Vanilla & Everyday Intimacy': 'Non-kink physical and emotional intimacy &mdash; the comfortable, unhurried side of a sexual and romantic connection, valuable on its own or alongside kink.',
   'Bondage & Restraint': 'Use of physical constraints to restrict a person\'s movement. Encompasses techniques from simple wrist ties to elaborate full-body rope work, and implements from handcuffs to custom harnesses.',
   'Impact Play': 'Consensual striking of the body for sensation, using hands or implements. Intensity, implement type, and target area determine the range from mild sting to deep thud.',
   'Sensory Play': 'Deliberate manipulation of the senses—touch, temperature, texture—to heighten awareness, alter perception, or create specific physical sensations.',
@@ -1224,7 +1302,8 @@ const S = {
   role: '',
   catInterest: {},   // catId -> val
   itemDir:     {},   // 'catId|item' -> dir val
-  itemRate:    {}    // 'catId|item' -> 1-5
+  itemRate:    {},   // 'catId|item' -> 1-5
+  itemLimit:   {}    // 'catId|item' -> true if marked a hard limit
 };
 
 function itemKey(catId, item) {
@@ -1516,11 +1595,15 @@ function buildReview() {
     chips.className = 'rev-chips';
     missed.forEach(item => {
       const key = itemKey(cat.id, item);
+      const isLimit = !!S.itemLimit[key];
       const chip = document.createElement('div');
-      chip.className = 'rev-chip';
+      chip.className = 'rev-chip' + (isLimit ? ' limit' : '');
       chip.dataset.key = key;
       chip.innerHTML = `
-        <button type="button" class="rev-chip-name">${tipSpan(item)}</button>
+        <div class="rev-chip-head">
+          <button type="button" class="rev-chip-name">${tipSpan(item)}</button>
+          <button type="button" class="limit-btn${isLimit ? ' on' : ''}" title="Mark as an absolute no">Hard Limit</button>
+        </div>
         <div class="rev-controls">
           <div class="rev-mini">
             <span class="rev-mini-lbl">Dir</span>
@@ -1552,6 +1635,25 @@ function buildReview() {
     if (!chip) return;
     const key = chip.dataset.key;
 
+    const limitBtn = e.target.closest('.limit-btn');
+    if (limitBtn) {
+      const turningOn = !chip.classList.contains('limit');
+      if (turningOn) {
+        // hard limit is mutually exclusive with adding as an interest
+        delete S.itemDir[key];
+        delete S.itemRate[key];
+        S.itemLimit[key] = true;
+        chip.classList.add('limit');
+        chip.classList.remove('added');
+        chip.querySelectorAll('.d-pill.mini, .r-btn.mini').forEach(b => b.classList.remove('on'));
+      } else {
+        delete S.itemLimit[key];
+        chip.classList.remove('limit');
+      }
+      limitBtn.classList.toggle('on', turningOn);
+      return;
+    }
+
     const dirBtn = e.target.closest('.d-pill.mini');
     if (dirBtn) {
       S.itemDir[key] = dirBtn.dataset.dir;
@@ -1579,6 +1681,11 @@ function buildReview() {
         chip.classList.remove('added');
         chip.querySelectorAll('.d-pill.mini, .r-btn.mini').forEach(b => b.classList.remove('on'));
       } else {
+        // adding as an interest overrides any hard-limit mark
+        delete S.itemLimit[key];
+        chip.classList.remove('limit');
+        const limitToggle = chip.querySelector('.limit-btn');
+        if (limitToggle) limitToggle.classList.remove('on');
         // quick-add, defaulting to Both
         S.itemDir[key] = 'both';
         chip.classList.add('added');
@@ -1624,12 +1731,24 @@ function collectResults() {
   return out;
 }
 
+// Items marked "Hard Limit" on the review ("Are You Sure?") screen.
+function collectLimits() {
+  const out = [];
+  CATS.forEach(cat => {
+    const items = cat.items.filter(item => S.itemLimit[itemKey(cat.id, item)]);
+    if (items.length > 0) out.push({ id: cat.id, name: cat.name, items });
+  });
+  return out;
+}
+
 function buildResults() {
   document.getElementById('res-role').textContent = S.role || 'Not specified';
   const body = document.getElementById('res-body');
   body.innerHTML = '';
 
   const data = collectResults();
+  const limits = collectLimits();
+  const limitCount = limits.reduce((a, c) => a + c.items.length, 0);
   const allItems = data.flatMap(sec => sec.items);
   const fives = allItems.filter(i => i.rate === 5).length;
   const topCat = data.slice().sort((a, b) => b.items.length - a.items.length)[0];
@@ -1649,11 +1768,32 @@ function buildResults() {
       <div class="sum-tile">
         <div class="sum-num">${catIcon(topCat.id)}</div>
         <div class="sum-lbl">Top Category<br>${escHtml(topCat.name)}</div>
-      </div>`;
+      </div>
+      ${limitCount > 0 ? `<div class="sum-tile limit-tile">
+        <div class="sum-num limit-num">${limitCount}</div>
+        <div class="sum-lbl">Hard Limits</div>
+      </div>` : ''}`;
     body.appendChild(sum);
-  } else {
+  } else if (limitCount === 0) {
     body.innerHTML = '<div class="empty-msg">No selections yet. Go back and pick a few things that interest you.</div>';
     return;
+  }
+
+  if (limitCount > 0) {
+    const limSec = document.createElement('div');
+    limSec.className = 'res-section limits-section';
+    limSec.innerHTML = `<div class="res-sec-title res-limits-title"><span class="sec-icon">⛔</span>Limits</div>`;
+    limits.forEach(cat => {
+      cat.items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'res-item';
+        row.innerHTML = `
+          <div class="res-item-name">${tipSpan(item)}</div>
+          <div class="res-meta"><span class="res-limit-tag">${escHtml(cat.name)}</span></div>`;
+        limSec.appendChild(row);
+      });
+    });
+    body.appendChild(limSec);
   }
 
   data.forEach(secData => {
@@ -1706,9 +1846,18 @@ function copyResults() {
     lines.push('');
   });
 
-  if (hardLimits) {
-    lines.push('--- HARD LIMITS ---');
-    lines.push(hardLimits);
+  const limits = collectLimits();
+  if (limits.length > 0 || hardLimits) {
+    lines.push('--- LIMITS ---');
+    limits.forEach(cat => {
+      cat.items.forEach(item => {
+        lines.push(`  ${item} [${cat.name}]`);
+      });
+    });
+    if (hardLimits) {
+      if (limits.length > 0) lines.push('');
+      lines.push(hardLimits);
+    }
     lines.push('');
   }
   if (extraNotes) {
@@ -1808,6 +1957,8 @@ async function exportImage() {
   try { await document.fonts.ready; } catch (e) { /* fonts optional */ }
 
   const data = collectResults();
+  const limits = collectLimits();
+  const limitCount = limits.reduce((a, c) => a + c.items.length, 0);
   const hardLimits = document.getElementById('hard-limits').value.trim();
   const extraNotes = document.getElementById('extra-notes').value.trim();
 
@@ -1826,6 +1977,7 @@ async function exportImage() {
 
   let H = 210; // header
   data.forEach(sec => { H += SEC_HEAD + sec.items.length * ROW_H + SEC_GAP; });
+  if (limitCount > 0) H += SEC_HEAD + limitCount * ROW_H + SEC_GAP;
   if (limitLines.length) H += 66 + limitLines.length * 26 + 24;
   if (noteLines.length) H += 66 + noteLines.length * 26 + 24;
   H += 90; // footer
@@ -1932,6 +2084,52 @@ async function exportImage() {
     y += SEC_GAP;
   });
 
+  // ---- limits section ----
+  if (limitCount > 0) {
+    ctx.textAlign = 'left';
+    ctx.font = '26px ' + serif;
+    ctx.fillStyle = '#e0a0a0';
+    ctx.fillText('⛔  Limits', PAD, y + 26);
+    ctx.strokeStyle = 'rgba(200,70,70,0.35)';
+    ctx.beginPath();
+    ctx.moveTo(PAD, y + 40);
+    ctx.lineTo(W - PAD, y + 40);
+    ctx.stroke();
+    y += SEC_HEAD;
+
+    limits.forEach(cat => {
+      cat.items.forEach(item => {
+        const rowMid = y + ROW_H / 2;
+
+        ctx.strokeStyle = 'rgba(200,70,70,0.08)';
+        ctx.beginPath();
+        ctx.moveTo(PAD, y + ROW_H);
+        ctx.lineTo(W - PAD, y + ROW_H);
+        ctx.stroke();
+
+        // category tag (right-aligned, mirrors the direction pill above)
+        const catLabel = cat.name.toUpperCase();
+        ctx.font = '500 11px ' + sans;
+        const cw = ctx.measureText(catLabel).width + 24;
+        exRoundRect(ctx, W - PAD - cw, rowMid - 12, cw, 24, 12);
+        ctx.strokeStyle = 'rgba(200,70,70,0.4)';
+        ctx.stroke();
+        ctx.fillStyle = '#d08080';
+        ctx.textAlign = 'center';
+        ctx.fillText(catLabel, W - PAD - cw / 2, rowMid + 4);
+
+        // item name
+        ctx.textAlign = 'left';
+        ctx.font = '300 17px ' + sans;
+        ctx.fillStyle = EX.text;
+        ctx.fillText(exFitText(ctx, item, W - PAD - cw - PAD - 20), PAD, rowMid + 6);
+
+        y += ROW_H;
+      });
+    });
+    y += SEC_GAP;
+  }
+
   // ---- notes blocks ----
   const notesBlock = (title, lines) => {
     const bh = 50 + lines.length * 26;
@@ -1948,7 +2146,7 @@ async function exportImage() {
     lines.forEach((ln, i) => ctx.fillText(ln, PAD + 28, y + 60 + i * 26));
     y += bh + 24;
   };
-  if (limitLines.length) notesBlock('Hard Limits', limitLines);
+  if (limitLines.length) notesBlock('Additional Hard Limits', limitLines);
   if (noteLines.length) notesBlock('Notes', noteLines);
 
   // ---- footer ----
