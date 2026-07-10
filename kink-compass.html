@@ -816,6 +816,11 @@
       transform: translateY(0);
       pointer-events: auto;
     }
+    .has-tip.tip-armed {
+      color: var(--accent2);
+      border-bottom-style: solid;
+      border-bottom-color: var(--accent);
+    }
 
     /* ========== MOBILE ========== */
     @media (max-width: 560px) {
@@ -2244,17 +2249,14 @@ function tipSpan(text) {
 }
 
 // ============================================================
-// MOBILE TOOLTIPS -- native `title` only shows on desktop hover,
-// so touch devices get a long-press popup instead. A quick tap
-// still falls through to whatever the element normally does
-// (select a role, quick-add on the review screen, etc.) so this
-// never hijacks the existing tap-to-choose interactions.
+// MOBILE TOOLTIPS -- native `title` only shows on desktop hover, so
+// touch devices get a two-tap pattern instead: the first tap on a
+// word reveals its tooltip and is swallowed (so it doesn't also fire
+// a select/quick-add); a second tap on that same word lets the click
+// through normally. Tapping anywhere else just dismisses the tooltip.
 // ============================================================
-const TIP_HOLD_MS = 380;
-let tipTimer = null;
-let tipSuppressClick = false;
 let tipPopupEl = null;
-let tipActiveEl = null;
+let tipArmedEl = null; // has-tip element currently showing its tooltip
 
 function ensureTipPopup() {
   if (!tipPopupEl) {
@@ -2284,41 +2286,37 @@ function positionTipPopup(el) {
 
 function showTipPopup(el) {
   const desc = el.getAttribute('title');
-  if (!desc) return;
+  if (!desc) return false;
   const pop = ensureTipPopup();
   pop.textContent = desc;
-  tipActiveEl = el;
   positionTipPopup(el);
   pop.classList.add('show');
+  el.classList.add('tip-armed');
+  return true;
 }
 
 function hideTipPopup() {
   if (tipPopupEl) tipPopupEl.classList.remove('show');
-  tipActiveEl = null;
+  if (tipArmedEl) tipArmedEl.classList.remove('tip-armed');
+  tipArmedEl = null;
 }
 
-document.addEventListener('pointerdown', e => {
-  if (tipActiveEl && !e.target.closest('#tip-popup')) hideTipPopup();
-  const el = e.target.closest && e.target.closest('.has-tip');
-  if (!el) return;
-  tipSuppressClick = false;
-  clearTimeout(tipTimer);
-  tipTimer = setTimeout(() => {
-    showTipPopup(el);
-    tipSuppressClick = true;
-  }, TIP_HOLD_MS);
-});
-document.addEventListener('pointerup', () => clearTimeout(tipTimer));
-document.addEventListener('pointercancel', () => clearTimeout(tipTimer));
-
-// swallow the click that follows a long-press so it doesn't also
-// trigger the element's normal select/quick-add behavior
 document.addEventListener('click', e => {
-  if (tipSuppressClick) {
-    e.preventDefault();
-    e.stopPropagation();
-    tipSuppressClick = false;
+  const el = e.target.closest && e.target.closest('.has-tip');
+  if (!el) {
+    if (tipArmedEl && !e.target.closest('#tip-popup')) hideTipPopup();
+    return;
   }
+  if (tipArmedEl === el) {
+    // second tap on the same word -- let the click through, close the tip
+    hideTipPopup();
+    return;
+  }
+  // first tap on this word -- reveal the tooltip, swallow the click
+  e.preventDefault();
+  e.stopPropagation();
+  hideTipPopup();
+  tipArmedEl = showTipPopup(el) ? el : null;
 }, true);
 
 window.addEventListener('scroll', hideTipPopup, true);
