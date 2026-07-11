@@ -943,7 +943,7 @@
     </div>
     <div class="copy-wrap">
       <button class="btn-copy" id="export-btn" onclick="exportImage()">Download as Image</button>
-      <div class="copy-note">Exports a shareable graphic of every answer with its scale</div>
+      <div class="copy-note">Exports readable, phone-sized cards (swipe through as a set)</div>
       <button class="btn-copy alt" id="copy-btn" onclick="copyResults()">Copy as Text</button>
       <div class="copy-note">Formats your results as plain text for easy sharing</div>
     </div>
@@ -1988,177 +1988,95 @@ async function exportImage() {
   const hardLimits = document.getElementById('hard-limits').value.trim();
   const extraNotes = document.getElementById('extra-notes').value.trim();
 
-  const W = 1080, PAD = 64, SCALE = 2;
+  // Mobile-friendly "story card" pages instead of one long strip: each
+  // page is sized to be fully readable on a phone screen without zooming.
+  const W = 1080, CARD_H = 1440, PAD = 64, SCALE = 2;
+  const HEADER_H = 132, FOOTER_H = 64;
   const ROW_H = 46, SEC_HEAD = 66, SEC_GAP = 26;
   const serif = "'Cormorant Garamond', Georgia, serif";
   const sans = "'Jost', system-ui, sans-serif";
+  const contentMaxH = CARD_H - HEADER_H - FOOTER_H;
+  const meterW = 5 * 24 + 4 * 5;           // 5 segments + gaps
+  const meterX = W - PAD - meterW;         // right-aligned meter
+  const dirX = meterX - 24;                // direction pill sits left of meter
 
-  const canvas = document.createElement('canvas');
-  let ctx = canvas.getContext('2d');
+  const measureCanvas = document.createElement('canvas');
+  const mctx = measureCanvas.getContext('2d');
+  mctx.font = '300 17px ' + sans;
+  const limitLines = hardLimits ? exWrapText(mctx, hardLimits, W - PAD * 2 - 56) : [];
+  const noteLines = extraNotes ? exWrapText(mctx, extraNotes, W - PAD * 2 - 56) : [];
 
-  // ---- measure pass (for notes wrapping) ----
-  ctx.font = '300 17px ' + sans;
-  const limitLines = hardLimits ? exWrapText(ctx, hardLimits, W - PAD * 2 - 56) : [];
-  const noteLines = extraNotes ? exWrapText(ctx, extraNotes, W - PAD * 2 - 56) : [];
-
-  let H = 210; // header
-  data.forEach(sec => { H += SEC_HEAD + sec.items.length * ROW_H + SEC_GAP; });
-  if (limitCount > 0) H += SEC_HEAD + limitCount * ROW_H + SEC_GAP;
-  if (limitLines.length) H += 66 + limitLines.length * 26 + 24;
-  if (noteLines.length) H += 66 + noteLines.length * 26 + 24;
-  H += 90; // footer
-
-  canvas.width = W * SCALE;
-  canvas.height = H * SCALE;
-  ctx = canvas.getContext('2d');
-  ctx.scale(SCALE, SCALE);
-
-  // ---- background ----
-  ctx.fillStyle = EX.bg;
-  ctx.fillRect(0, 0, W, H);
-  const glow = ctx.createRadialGradient(W * 0.2, 240, 0, W * 0.2, 240, 700);
-  glow.addColorStop(0, 'rgba(170,90,20,0.12)');
-  glow.addColorStop(1, 'rgba(170,90,20,0)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, H);
-
-  // ---- header ----
-  ctx.textBaseline = 'alphabetic';
-  ctx.textAlign = 'center';
-  ctx.fillStyle = EX.accent3;
-  ctx.font = '300 58px ' + serif;
-  ctx.fillText('Kink Compass', W / 2, 96);
-  ctx.fillStyle = EX.muted;
-  ctx.font = 'italic 300 21px ' + serif;
-  ctx.fillText(S.role || 'Not specified', W / 2, 134);
-  ctx.strokeStyle = EX.border;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(PAD, 168);
-  ctx.lineTo(W - PAD, 168);
-  ctx.stroke();
-
-  let y = 210;
-  const meterW = 5 * 24 + 4 * 5;          // 5 segments + gaps
-  const meterX = W - PAD - meterW;        // right-aligned meter
-  const dirX = meterX - 24;               // direction pill sits left of meter
-
-  data.forEach(sec => {
-    // section header
-    ctx.textAlign = 'left';
-    ctx.font = '26px ' + serif;
-    ctx.fillStyle = EX.accent2;
-    ctx.fillText(catIcon(sec.id) + '  ' + sec.name, PAD, y + 26);
-    ctx.strokeStyle = EX.border;
+  // ---- draw helpers (operate relative to a block's own yTop) ----
+  function drawItemRow(ctx, item, y) {
+    const rowMid = y + ROW_H / 2;
+    ctx.strokeStyle = 'rgba(195,120,40,0.07)';
     ctx.beginPath();
-    ctx.moveTo(PAD, y + 40);
-    ctx.lineTo(W - PAD, y + 40);
+    ctx.moveTo(PAD, y + ROW_H);
+    ctx.lineTo(W - PAD, y + ROW_H);
     ctx.stroke();
-    y += SEC_HEAD;
 
-    sec.items.forEach(item => {
-      const rowMid = y + ROW_H / 2;
+    const dirLabel = (DIRS.find(d => d.val === item.dir)?.label || item.dir).toUpperCase();
+    ctx.font = '500 11px ' + sans;
+    const dw = ctx.measureText(dirLabel).width + 24;
+    exRoundRect(ctx, dirX - dw, rowMid - 12, dw, 24, 12);
+    ctx.strokeStyle = 'rgba(195,120,40,0.4)';
+    ctx.stroke();
+    ctx.fillStyle = EX.accent;
+    ctx.textAlign = 'center';
+    ctx.fillText(dirLabel, dirX - dw / 2, rowMid + 4);
 
-      // faint row separator
-      ctx.strokeStyle = 'rgba(195,120,40,0.07)';
-      ctx.beginPath();
-      ctx.moveTo(PAD, y + ROW_H);
-      ctx.lineTo(W - PAD, y + ROW_H);
-      ctx.stroke();
+    ctx.textAlign = 'left';
+    ctx.font = '300 17px ' + sans;
+    ctx.fillStyle = EX.text;
+    ctx.fillText(exFitText(ctx, item.name, dirX - dw - PAD - 20), PAD, rowMid + 6);
 
-      // direction pill (right of name, left of meter)
-      const dirLabel = (DIRS.find(d => d.val === item.dir)?.label || item.dir).toUpperCase();
-      ctx.font = '500 11px ' + sans;
-      const dw = ctx.measureText(dirLabel).width + 24;
-      exRoundRect(ctx, dirX - dw, rowMid - 12, dw, 24, 12);
-      ctx.strokeStyle = 'rgba(195,120,40,0.4)';
-      ctx.stroke();
-      ctx.fillStyle = EX.accent;
-      ctx.textAlign = 'center';
-      ctx.fillText(dirLabel, dirX - dw / 2, rowMid + 4);
-
-      // item name (truncated to available space)
-      ctx.textAlign = 'left';
-      ctx.font = '300 17px ' + sans;
-      ctx.fillStyle = EX.text;
-      ctx.fillText(exFitText(ctx, item.name, dirX - dw - PAD - 20), PAD, rowMid + 6);
-
-      // rating meter: 5 segments
-      for (let n = 1; n <= 5; n++) {
-        const sx = meterX + (n - 1) * 29;
-        exRoundRect(ctx, sx, rowMid - 5, 24, 10, 5);
-        if (item.rate >= n) {
-          const g = ctx.createLinearGradient(sx, 0, sx + 24, 0);
-          g.addColorStop(0, EX.accent);
-          g.addColorStop(1, EX.accent2);
-          ctx.fillStyle = g;
-          ctx.fill();
-        } else {
-          ctx.fillStyle = EX.segOff;
-          ctx.fill();
-        }
+    for (let n = 1; n <= 5; n++) {
+      const sx = meterX + (n - 1) * 29;
+      exRoundRect(ctx, sx, rowMid - 5, 24, 10, 5);
+      if (item.rate >= n) {
+        const g = ctx.createLinearGradient(sx, 0, sx + 24, 0);
+        g.addColorStop(0, EX.accent);
+        g.addColorStop(1, EX.accent2);
+        ctx.fillStyle = g;
+        ctx.fill();
+      } else {
+        ctx.fillStyle = EX.segOff;
+        ctx.fill();
       }
-      // numeric scale under the meter
-      ctx.font = '300 10px ' + sans;
-      ctx.fillStyle = item.rate > 0 ? EX.muted : EX.dim;
-      ctx.textAlign = 'right';
-      ctx.fillText(item.rate > 0 ? item.rate + ' / 5' : 'unrated', W - PAD, rowMid + 18);
-      ctx.textAlign = 'left';
-
-      y += ROW_H;
-    });
-    y += SEC_GAP;
-  });
-
-  // ---- limits section ----
-  if (limitCount > 0) {
+    }
+    ctx.font = '300 10px ' + sans;
+    ctx.fillStyle = item.rate > 0 ? EX.muted : EX.dim;
+    ctx.textAlign = 'right';
+    ctx.fillText(item.rate > 0 ? item.rate + ' / 5' : 'unrated', W - PAD, rowMid + 18);
     ctx.textAlign = 'left';
-    ctx.font = '26px ' + serif;
-    ctx.fillStyle = '#e0a0a0';
-    ctx.fillText('⛔  Limits', PAD, y + 26);
-    ctx.strokeStyle = 'rgba(200,70,70,0.35)';
-    ctx.beginPath();
-    ctx.moveTo(PAD, y + 40);
-    ctx.lineTo(W - PAD, y + 40);
-    ctx.stroke();
-    y += SEC_HEAD;
-
-    limits.forEach(cat => {
-      cat.items.forEach(item => {
-        const rowMid = y + ROW_H / 2;
-
-        ctx.strokeStyle = 'rgba(200,70,70,0.08)';
-        ctx.beginPath();
-        ctx.moveTo(PAD, y + ROW_H);
-        ctx.lineTo(W - PAD, y + ROW_H);
-        ctx.stroke();
-
-        // category tag (right-aligned, mirrors the direction pill above)
-        const catLabel = cat.name.toUpperCase();
-        ctx.font = '500 11px ' + sans;
-        const cw = ctx.measureText(catLabel).width + 24;
-        exRoundRect(ctx, W - PAD - cw, rowMid - 12, cw, 24, 12);
-        ctx.strokeStyle = 'rgba(200,70,70,0.4)';
-        ctx.stroke();
-        ctx.fillStyle = '#d08080';
-        ctx.textAlign = 'center';
-        ctx.fillText(catLabel, W - PAD - cw / 2, rowMid + 4);
-
-        // item name
-        ctx.textAlign = 'left';
-        ctx.font = '300 17px ' + sans;
-        ctx.fillStyle = EX.text;
-        ctx.fillText(exFitText(ctx, item, W - PAD - cw - PAD - 20), PAD, rowMid + 6);
-
-        y += ROW_H;
-      });
-    });
-    y += SEC_GAP;
   }
 
-  // ---- notes blocks ----
-  const notesBlock = (title, lines) => {
-    const bh = 50 + lines.length * 26;
+  function drawLimitRow(ctx, cat, item, y) {
+    const rowMid = y + ROW_H / 2;
+    ctx.strokeStyle = 'rgba(200,70,70,0.08)';
+    ctx.beginPath();
+    ctx.moveTo(PAD, y + ROW_H);
+    ctx.lineTo(W - PAD, y + ROW_H);
+    ctx.stroke();
+
+    const catLabel = cat.name.toUpperCase();
+    ctx.font = '500 11px ' + sans;
+    const cw = ctx.measureText(catLabel).width + 24;
+    exRoundRect(ctx, W - PAD - cw, rowMid - 12, cw, 24, 12);
+    ctx.strokeStyle = 'rgba(200,70,70,0.4)';
+    ctx.stroke();
+    ctx.fillStyle = '#d08080';
+    ctx.textAlign = 'center';
+    ctx.fillText(catLabel, W - PAD - cw / 2, rowMid + 4);
+
+    ctx.textAlign = 'left';
+    ctx.font = '300 17px ' + sans;
+    ctx.fillStyle = EX.text;
+    ctx.fillText(exFitText(ctx, item, W - PAD - cw - PAD - 20), PAD, rowMid + 6);
+  }
+
+  function drawNotesBlock(ctx, title, lines, y, bh) {
+    ctx.textAlign = 'left';
     ctx.fillStyle = EX.card;
     exRoundRect(ctx, PAD, y, W - PAD * 2, bh, 3);
     ctx.fill();
@@ -2170,34 +2088,158 @@ async function exportImage() {
     ctx.font = '300 17px ' + sans;
     ctx.fillStyle = EX.text;
     lines.forEach((ln, i) => ctx.fillText(ln, PAD + 28, y + 60 + i * 26));
-    y += bh + 24;
+  }
+
+  // ---- build a flat list of blocks to lay out across cards ----
+  // A section header is fused with its first row so a header never ends
+  // up alone at the bottom of a card with its items pushed to the next.
+  const blocks = [];
+  data.forEach(sec => {
+    const [first, ...rest] = sec.items;
+    blocks.push({
+      h: SEC_HEAD + ROW_H,
+      draw(ctx, y) {
+        ctx.textAlign = 'left';
+        ctx.font = '26px ' + serif;
+        ctx.fillStyle = EX.accent2;
+        ctx.fillText(catIcon(sec.id) + '  ' + sec.name, PAD, y + 26);
+        ctx.strokeStyle = EX.border;
+        ctx.beginPath();
+        ctx.moveTo(PAD, y + 40);
+        ctx.lineTo(W - PAD, y + 40);
+        ctx.stroke();
+        drawItemRow(ctx, first, y + SEC_HEAD);
+      }
+    });
+    rest.forEach(item => {
+      blocks.push({ h: ROW_H, draw(ctx, y) { drawItemRow(ctx, item, y); } });
+    });
+    blocks.push({ h: SEC_GAP, spacer: true, draw() {} });
+  });
+
+  if (limitCount > 0) {
+    const flat = limits.flatMap(cat => cat.items.map(item => ({ cat, item })));
+    const [first, ...rest] = flat;
+    blocks.push({
+      h: SEC_HEAD + ROW_H,
+      draw(ctx, y) {
+        ctx.textAlign = 'left';
+        ctx.font = '26px ' + serif;
+        ctx.fillStyle = '#e0a0a0';
+        ctx.fillText('⛔  Limits', PAD, y + 26);
+        ctx.strokeStyle = 'rgba(200,70,70,0.35)';
+        ctx.beginPath();
+        ctx.moveTo(PAD, y + 40);
+        ctx.lineTo(W - PAD, y + 40);
+        ctx.stroke();
+        drawLimitRow(ctx, first.cat, first.item, y + SEC_HEAD);
+      }
+    });
+    rest.forEach(({ cat, item }) => {
+      blocks.push({ h: ROW_H, draw(ctx, y) { drawLimitRow(ctx, cat, item, y); } });
+    });
+    blocks.push({ h: SEC_GAP, spacer: true, draw() {} });
+  }
+
+  const addNotesBlock = (title, lines) => {
+    if (!lines.length) return;
+    const bh = 50 + lines.length * 26;
+    blocks.push({ h: bh + 24, draw(ctx, y) { drawNotesBlock(ctx, title, lines, y, bh); } });
   };
-  if (limitLines.length) notesBlock('Additional Hard Limits', limitLines);
-  if (noteLines.length) notesBlock('Notes', noteLines);
+  addNotesBlock('Additional Hard Limits', limitLines);
+  addNotesBlock('Notes', noteLines);
 
-  // ---- footer ----
-  ctx.textAlign = 'center';
-  ctx.font = 'italic 300 15px ' + serif;
-  ctx.fillStyle = EX.dim;
+  // ---- paginate blocks into fixed-height cards ----
+  const pages = [];
+  let i = 0;
+  while (i < blocks.length) {
+    while (i < blocks.length && blocks[i].spacer) i++; // don't open a page with a spacer
+    if (i >= blocks.length) break;
+    const page = [];
+    let used = 0;
+    while (i < blocks.length) {
+      const b = blocks[i];
+      if (used + b.h > contentMaxH && page.length > 0) break;
+      page.push({ block: b, y: used });
+      used += b.h;
+      i++;
+    }
+    pages.push(page);
+  }
+  if (pages.length === 0) pages.push([]);
+
   const dateStr = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-  ctx.fillText('Created with Kink Compass • ' + dateStr, W / 2, H - 44);
 
-  // ---- download ----
-  canvas.toBlob(blob => {
+  // ---- render + download each card ----
+  for (let p = 0; p < pages.length; p++) {
+    btn.textContent = pages.length > 1 ? `Rendering… (${p + 1}/${pages.length})` : 'Rendering…';
+
+    const canvas = document.createElement('canvas');
+    canvas.width = W * SCALE;
+    canvas.height = CARD_H * SCALE;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(SCALE, SCALE);
+    ctx.textBaseline = 'alphabetic';
+
+    // background
+    ctx.fillStyle = EX.bg;
+    ctx.fillRect(0, 0, W, CARD_H);
+    const glow = ctx.createRadialGradient(W * 0.2, 200, 0, W * 0.2, 200, 700);
+    glow.addColorStop(0, 'rgba(170,90,20,0.12)');
+    glow.addColorStop(1, 'rgba(170,90,20,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, CARD_H);
+
+    // header (repeated on every card so each one stands alone)
+    ctx.textAlign = 'center';
+    ctx.fillStyle = EX.accent3;
+    ctx.font = '300 40px ' + serif;
+    ctx.fillText('Kink Compass', W / 2, 56);
+    ctx.fillStyle = EX.muted;
+    ctx.font = 'italic 300 18px ' + serif;
+    ctx.fillText(S.role || 'Not specified', W / 2, 84);
+    if (pages.length > 1) {
+      ctx.textAlign = 'right';
+      ctx.font = '500 13px ' + sans;
+      ctx.fillStyle = EX.dim;
+      ctx.fillText(`${p + 1} / ${pages.length}`, W - PAD, 56);
+    }
+    ctx.strokeStyle = EX.border;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(PAD, HEADER_H - 20);
+    ctx.lineTo(W - PAD, HEADER_H - 20);
+    ctx.stroke();
+
+    // content
+    pages[p].forEach(({ block, y }) => block.draw(ctx, HEADER_H + y));
+
+    // footer
+    ctx.textAlign = 'center';
+    ctx.font = 'italic 300 14px ' + serif;
+    ctx.fillStyle = EX.dim;
+    ctx.fillText('Created with Kink Compass • ' + dateStr, W / 2, CARD_H - 28);
+
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'kink-compass-' + new Date().toISOString().slice(0, 10) + '.png';
+    const dateSlug = new Date().toISOString().slice(0, 10);
+    a.download = pages.length > 1
+      ? `kink-compass-${dateSlug}-${p + 1}of${pages.length}.png`
+      : `kink-compass-${dateSlug}.png`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    btn.textContent = 'Downloaded!';
-    btn.classList.add('done');
-    setTimeout(() => {
-      btn.textContent = 'Download as Image';
-      btn.classList.remove('done');
-    }, 2600);
-  }, 'image/png');
+    if (p < pages.length - 1) await new Promise(resolve => setTimeout(resolve, 300));
+  }
+
+  btn.textContent = 'Downloaded!';
+  btn.classList.add('done');
+  setTimeout(() => {
+    btn.textContent = 'Download as Image';
+    btn.classList.remove('done');
+  }, 2600);
 }
 
 // ============================================================
