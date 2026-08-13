@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kink Compass</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ========== CONSENT ========== -->
+<div id="screen-consent" class="screen active">
+  <div class="consent-halo"></div>
+  <div class="consent-halo2"></div>
+  <div class="c-title">Kink Compass</div>
+  <div class="c-sub">an intimate self-discovery tool</div>
+  <div class="c-card">
+    <p>This tool contains explicit adult content related to sexuality and kink. It is intended for adults 18 years of age and older.</p>
+    <p>Your responses are never stored, never transmitted, and never leave your device. Everything stays local.</p>
+    <p class="c-note">Anonymous by design &bull; No accounts &bull; No data collection &bull; No tracking</p>
+  </div>
+  <button class="btn-yes" onclick="consentYes()">I am 18+ &mdash; Enter</button>
+  <button class="btn-no" onclick="consentNo()">I am under 18</button>
+</div>
+
+<!-- ========== ROLE ========== -->
+<div id="screen-role" class="screen">
+  <div class="prog-bar" id="prog-role"></div>
+  <div class="inner">
+    <h1 class="s-title">Your Role</h1>
+    <p class="s-sub">How do you primarily identify? This appears on your results only and does not affect which questions you see.</p>
+    <div class="role-list" id="role-list"></div>
+    <div class="nav-btns">
+      <button class="btn-pri" onclick="fromRole()">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== CATEGORIES ========== -->
+<div id="screen-categories" class="screen">
+  <div class="prog-bar" id="prog-categories"></div>
+  <div class="inner">
+    <h1 class="s-title">Category Interest</h1>
+    <p class="s-sub">Rate your overall interest in each category. Anything marked "None" will be skipped entirely in the next steps.</p>
+    <div class="cat-list" id="cat-list"></div>
+    <div class="nav-btns">
+      <button class="btn-sec" onclick="goTo('role')">Back</button>
+      <button class="btn-pri" onclick="fromCategories()">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== PASS 1 ========== -->
+<div id="screen-pass1" class="screen">
+  <div class="prog-bar" id="prog-pass1"></div>
+  <div class="inner">
+    <h1 class="s-title">Give or Receive?</h1>
+    <p class="s-sub">For each activity, select how you are interested in it. Skip anything that does not feel right.</p>
+    <div id="pass1-body"></div>
+    <div class="nav-btns">
+      <button class="btn-sec" onclick="goTo('categories')">Back</button>
+      <button class="btn-pri" onclick="fromPass1()">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== PASS 2 ========== -->
+<div id="screen-pass2" class="screen">
+  <div class="prog-bar" id="prog-pass2"></div>
+  <div class="inner">
+    <h1 class="s-title">Rate Your Interest</h1>
+    <p class="s-sub">Rate each selected activity from 1 (mild curiosity) to 5 (high priority for you).</p>
+    <div id="pass2-body"></div>
+    <div class="nav-btns">
+      <button class="btn-sec" onclick="goTo('pass1')">Back</button>
+      <button class="btn-pri" onclick="fromPass2()">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== REVIEW (ARE YOU SURE) ========== -->
+<div id="screen-review" class="screen">
+  <div class="prog-bar" id="prog-review"></div>
+  <div class="inner">
+    <h1 class="s-title">Are You Sure?</h1>
+    <p class="s-sub">One last look before your results.</p>
+    <div class="rev-intro">
+      Below is <strong>everything you did NOT select</strong> &mdash; including categories you skipped entirely.
+      Give it a quick scan for any randoms you missed. Tap a name to add it, set give/receive, and rate it right here &mdash;
+      or mark it <strong>Hard Limit</strong> if it's an absolute no. Hard limits are pulled into their own
+      <strong>Limits</strong> section on your results.
+    </div>
+    <div id="review-body"></div>
+    <div class="nav-btns">
+      <button class="btn-sec" onclick="backToPass2()">Back</button>
+      <button class="btn-pri" onclick="fromReview()">See My Results</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== RESULTS ========== -->
+<div id="screen-results" class="screen">
+  <div class="inner">
+    <div class="res-header">
+      <h1 class="s-title">My Kink Compass</h1>
+      <div class="res-role" id="res-role"></div>
+    </div>
+    <div id="res-body"></div>
+    <div class="res-notes">
+      <div class="res-notes-title">Final Notes</div>
+      <label class="field-label">Additional Hard Limits</label>
+      <textarea class="res-ta" id="hard-limits" placeholder="Anything not already caught above &mdash; list any other absolute nos here..."></textarea>
+      <label class="field-label">Additional Notes, Fantasies, or Experience Level</label>
+      <textarea class="res-ta" id="extra-notes" placeholder="Anything else you want to share..."></textarea>
+    </div>
+    <div class="copy-wrap">
+      <button class="btn-copy" id="export-btn" onclick="exportImage()">Download as Image</button>
+      <div class="copy-note">Exports readable, phone-sized cards (swipe through as a set)</div>
+      <button class="btn-copy alt" id="copy-btn" onclick="copyResults()">Copy as Text</button>
+      <div class="copy-note">Formats your results as plain text for easy sharing</div>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
