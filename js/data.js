@@ -10,8 +10,13 @@ const ROLES = [
   'Exploring / Not Sure'
 ];
 
+// Sentinel values that app.js compares against directly.
+const INTEREST_NONE  = 'none';   // category interest: skip it entirely
+const DIRECTION_NO   = 'no';     // item direction: not selected
+const DIRECTION_BOTH = 'both';   // item direction: default for quick-add on the review screen
+
 const INT_LEVELS = [
-  { val: 'none',    label: 'None' },
+  { val: INTEREST_NONE, label: 'None' },
   { val: 'little',  label: 'A Little' },
   { val: 'kind_of', label: 'Kind Of' },
   { val: 'very',    label: 'Very Interested' }
@@ -20,8 +25,8 @@ const INT_LEVELS = [
 const DIRS = [
   { val: 'give',    label: 'Give' },
   { val: 'receive', label: 'Receive' },
-  { val: 'both',    label: 'Both' },
-  { val: 'no',      label: 'No' }
+  { val: DIRECTION_BOTH, label: 'Both' },
+  { val: DIRECTION_NO,   label: 'No' }
 ];
 
 const CATS = [

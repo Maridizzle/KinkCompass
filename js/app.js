@@ -93,8 +93,10 @@ function escHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+const CATEGORY_PREVIEW_COUNT = 3;   // item names shown per category row before "+N more"
+
 function catPreview(cat) {
-  const shown = cat.items.slice(0, 3);
+  const shown = cat.items.slice(0, CATEGORY_PREVIEW_COUNT);
   const more = cat.items.length - shown.length;
   const names = shown.map(escHtml).join(' &middot; ');
   return names + (more > 0 ? ` <span class="more">+${more} more</span>` : '');
@@ -106,7 +108,7 @@ function buildCatScreen() {
   list.innerHTML = '';
   CATS.forEach(cat => {
     const row = document.createElement('div');
-    const hasInt = S.catInterest[cat.id] && S.catInterest[cat.id] !== 'none';
+    const hasInt = S.catInterest[cat.id] && S.catInterest[cat.id] !== INTEREST_NONE;
     row.className = 'cat-row' + (hasInt ? ' has-interest' : '');
     row.innerHTML = `
       <div class="cat-main">
@@ -137,12 +139,12 @@ function buildCatScreen() {
       b.classList.toggle('on', b.dataset.val === val);
     });
     const row = btn.closest('.cat-row');
-    if (row) row.classList.toggle('has-interest', val !== 'none');
+    if (row) row.classList.toggle('has-interest', val !== INTEREST_NONE);
   });
 }
 
 function fromCategories() {
-  const active = CATS.filter(c => S.catInterest[c.id] && S.catInterest[c.id] !== 'none');
+  const active = CATS.filter(c => S.catInterest[c.id] && S.catInterest[c.id] !== INTEREST_NONE);
   if (active.length === 0) {
     alert('Please select at least one category with some interest to continue.');
     return;
@@ -155,7 +157,7 @@ function fromCategories() {
 // PASS 1
 // ============================================================
 function activeCats() {
-  return CATS.filter(c => S.catInterest[c.id] && S.catInterest[c.id] !== 'none');
+  return CATS.filter(c => S.catInterest[c.id] && S.catInterest[c.id] !== INTEREST_NONE);
 }
 
 let pass1Bound = false;
@@ -198,7 +200,7 @@ function buildPass1() {
 }
 
 function fromPass1() {
-  const picked = Object.values(S.itemDir).filter(v => v && v !== 'no');
+  const picked = Object.values(S.itemDir).filter(v => v && v !== DIRECTION_NO);
   if (picked.length === 0) {
     alert('Please select at least one item before continuing.');
     return;
@@ -210,6 +212,9 @@ function fromPass1() {
 // ============================================================
 // PASS 2
 // ============================================================
+const RATING_MAX   = 5;             // ratings run 1..RATING_MAX
+const RATING_SCALE = [1,2,3,4,5];   // one button / meter segment per step, in order
+
 let pass2Bound = false;
 function buildPass2() {
   const body = document.getElementById('pass2-body');
@@ -221,7 +226,7 @@ function buildPass2() {
   CATS.forEach(cat => {
     const selItems = cat.items.filter(item => {
       const d = S.itemDir[itemKey(cat.id, item)];
-      return d && d !== 'no';
+      return d && d !== DIRECTION_NO;
     });
     if (selItems.length === 0) return;
     any = true;
@@ -238,7 +243,7 @@ function buildPass2() {
       row.innerHTML = `
         <div class="item-name">${tipSpan(item)}</div>
         <div class="rate-dots" data-key="${escAttr(key)}">
-          ${[1,2,3,4,5].map(n =>
+          ${RATING_SCALE.map(n =>
             `<button class="r-btn${n <= cur ? ' on' : ''}"
               data-key="${escAttr(key)}" data-n="${n}">${n}</button>`
           ).join('')}
@@ -274,7 +279,7 @@ function fromPass2() {
 // ============================================================
 // REVIEW -- "ARE YOU SURE?" (everything NOT selected)
 // ============================================================
-const REV_DIRS = DIRS.filter(d => d.val !== 'no');
+const REV_DIRS = DIRS.filter(d => d.val !== DIRECTION_NO);
 
 let reviewBound = false;
 function buildReview() {
@@ -285,7 +290,7 @@ function buildReview() {
   CATS.forEach(cat => {
     const missed = cat.items.filter(item => {
       const d = S.itemDir[itemKey(cat.id, item)];
-      return !d || d === 'no';
+      return !d || d === DIRECTION_NO;
     });
     if (missed.length === 0) return;
     total += missed.length;
@@ -316,7 +321,7 @@ function buildReview() {
           </div>
           <div class="rev-mini">
             <span class="rev-mini-lbl">Rate</span>
-            ${[1,2,3,4,5].map(n =>
+            ${RATING_SCALE.map(n =>
               `<button type="button" class="r-btn mini" data-n="${n}">${n}</button>`
             ).join('')}
           </div>
@@ -390,10 +395,10 @@ function buildReview() {
         const limitToggle = chip.querySelector('.limit-btn');
         if (limitToggle) limitToggle.classList.remove('on');
         // quick-add, defaulting to Both
-        S.itemDir[key] = 'both';
+        S.itemDir[key] = DIRECTION_BOTH;
         chip.classList.add('added');
         chip.querySelectorAll('.d-pill.mini').forEach(b => {
-          b.classList.toggle('on', b.dataset.dir === 'both');
+          b.classList.toggle('on', b.dataset.dir === DIRECTION_BOTH);
         });
       }
     }
@@ -421,7 +426,7 @@ function collectResults() {
     const items = cat.items
       .filter(item => {
         const d = S.itemDir[itemKey(cat.id, item)];
-        return d && d !== 'no';
+        return d && d !== DIRECTION_NO;
       })
       .map(item => {
         const key = itemKey(cat.id, item);
@@ -453,7 +458,7 @@ function buildResults() {
   const limits = collectLimits();
   const limitCount = limits.reduce((a, c) => a + c.items.length, 0);
   const allItems = data.flatMap(sec => sec.items);
-  const fives = allItems.filter(i => i.rate === 5).length;
+  const fives = allItems.filter(i => i.rate === RATING_MAX).length;
   const topCat = data.slice().sort((a, b) => b.items.length - a.items.length)[0];
 
   if (allItems.length > 0) {
@@ -507,7 +512,7 @@ function buildResults() {
     secData.items.forEach(item => {
       const dirLabel = DIRS.find(d => d.val === item.dir)?.label || item.dir;
       const meter = item.rate > 0
-        ? `<span class="res-bar">${[1,2,3,4,5].map(n =>
+        ? `<span class="res-bar">${RATING_SCALE.map(n =>
             `<span class="res-seg${n <= item.rate ? ' fill' : ''}"></span>`).join('')}
            </span><span class="res-rate-num">${item.rate}/5</span>`
         : '<span class="res-unrated">not rated</span>';
@@ -528,6 +533,8 @@ function buildResults() {
 // ============================================================
 // COPY
 // ============================================================
+const BUTTON_CONFIRM_MS = 2600;   // how long "Copied!" / "Downloaded!" stays on the button
+
 function copyResults() {
   const hardLimits = document.getElementById('hard-limits').value.trim();
   const extraNotes = document.getElementById('extra-notes').value.trim();
@@ -542,7 +549,7 @@ function copyResults() {
     cat.items.forEach(item => {
       const dirLabel = DIRS.find(d => d.val === item.dir)?.label || item.dir;
       const stars = item.rate > 0
-        ? '*'.repeat(item.rate) + '.'.repeat(5 - item.rate)
+        ? '*'.repeat(item.rate) + '.'.repeat(RATING_MAX - item.rate)
         : 'unrated';
       lines.push(`  ${item.name} [${dirLabel}] ${stars}`);
     });
@@ -578,7 +585,7 @@ function copyResults() {
     setTimeout(() => {
       btn.textContent = 'Copy My Results';
       btn.classList.remove('done');
-    }, 2600);
+    }, BUTTON_CONFIRM_MS);
   };
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -612,8 +619,21 @@ const EX = {
   text:    '#f0dfc5',
   muted:   '#8a6a48',
   dim:     '#5a3e25',
-  segOff:  'rgba(195,120,40,0.16)'
+  segOff:  'rgba(195,120,40,0.16)',
+  // row rules, pill outlines, the limits-section red family, and the page glow
+  rowRule:         'rgba(195,120,40,0.07)',
+  pillStroke:      'rgba(195,120,40,0.4)',
+  limitRowRule:    'rgba(200,70,70,0.08)',
+  limitPillStroke: 'rgba(200,70,70,0.4)',
+  limitPillText:   '#d08080',
+  limitHead:       '#e0a0a0',
+  limitRule:       'rgba(200,70,70,0.35)',
+  glow:            'rgba(170,90,20,0.12)',
+  glowFade:        'rgba(170,90,20,0)'
 };
+
+const BLOB_REVOKE_MS  = 4000;   // free each PNG's object URL once its download has started
+const DOWNLOAD_GAP_MS = 300;    // pause between multi-page downloads
 
 function exRoundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -670,48 +690,53 @@ async function exportImage() {
   const W = 1080, CARD_H = 1440, PAD = 64, SCALE = 2;
   const HEADER_H = 132, FOOTER_H = 64;
   const ROW_H = 46, SEC_HEAD = 66, SEC_GAP = 26;
+  const SEG_W = 24, SEG_GAP = 5, SEG_STRIDE = 29;      // rating meter segment; stride = SEG_W + SEG_GAP
+  const NOTES_TEXT_INSET = 28, NOTES_WRAP_INSET = 56;  // notes block: text x-inset, and both sides of it for wrapping
+  const NOTES_HEAD_H = 50, NOTES_LINE_H = 26, NOTES_BLOCK_GAP = 24;
   const serif = "'Cormorant Garamond', Georgia, serif";
   const sans = "'Jost', system-ui, sans-serif";
+  const FONT_BODY = '300 17px ' + sans;   // item names and notes text
+  const FONT_PILL = '500 11px ' + sans;   // direction / category pill labels
   const contentMaxH = CARD_H - HEADER_H - FOOTER_H;
-  const meterW = 5 * 24 + 4 * 5;           // 5 segments + gaps
+  const meterW = RATING_MAX * SEG_W + 4 * SEG_GAP;   // 5 segments + gaps
   const meterX = W - PAD - meterW;         // right-aligned meter
   const dirX = meterX - 24;                // direction pill sits left of meter
 
   const measureCanvas = document.createElement('canvas');
   const mctx = measureCanvas.getContext('2d');
-  mctx.font = '300 17px ' + sans;
-  const limitLines = hardLimits ? exWrapText(mctx, hardLimits, W - PAD * 2 - 56) : [];
-  const noteLines = extraNotes ? exWrapText(mctx, extraNotes, W - PAD * 2 - 56) : [];
+  mctx.font = FONT_BODY;
+  const limitLines = hardLimits ? exWrapText(mctx, hardLimits, W - PAD * 2 - NOTES_WRAP_INSET) : [];
+  const noteLines = extraNotes ? exWrapText(mctx, extraNotes, W - PAD * 2 - NOTES_WRAP_INSET) : [];
 
   // ---- draw helpers (operate relative to a block's own yTop) ----
   function drawItemRow(ctx, item, y) {
     const rowMid = y + ROW_H / 2;
-    ctx.strokeStyle = 'rgba(195,120,40,0.07)';
+    ctx.strokeStyle = EX.rowRule;
     ctx.beginPath();
     ctx.moveTo(PAD, y + ROW_H);
     ctx.lineTo(W - PAD, y + ROW_H);
     ctx.stroke();
 
     const dirLabel = (DIRS.find(d => d.val === item.dir)?.label || item.dir).toUpperCase();
-    ctx.font = '500 11px ' + sans;
+    ctx.font = FONT_PILL;
     const dw = ctx.measureText(dirLabel).width + 24;
     exRoundRect(ctx, dirX - dw, rowMid - 12, dw, 24, 12);
-    ctx.strokeStyle = 'rgba(195,120,40,0.4)';
+    ctx.strokeStyle = EX.pillStroke;
     ctx.stroke();
     ctx.fillStyle = EX.accent;
     ctx.textAlign = 'center';
     ctx.fillText(dirLabel, dirX - dw / 2, rowMid + 4);
 
     ctx.textAlign = 'left';
-    ctx.font = '300 17px ' + sans;
+    ctx.font = FONT_BODY;
     ctx.fillStyle = EX.text;
     ctx.fillText(exFitText(ctx, item.name, dirX - dw - PAD - 20), PAD, rowMid + 6);
 
-    for (let n = 1; n <= 5; n++) {
-      const sx = meterX + (n - 1) * 29;
-      exRoundRect(ctx, sx, rowMid - 5, 24, 10, 5);
+    for (let n = 1; n <= RATING_MAX; n++) {
+      const sx = meterX + (n - 1) * SEG_STRIDE;
+      exRoundRect(ctx, sx, rowMid - 5, SEG_W, 10, 5);
       if (item.rate >= n) {
-        const g = ctx.createLinearGradient(sx, 0, sx + 24, 0);
+        const g = ctx.createLinearGradient(sx, 0, sx + SEG_W, 0);
         g.addColorStop(0, EX.accent);
         g.addColorStop(1, EX.accent2);
         ctx.fillStyle = g;
@@ -730,24 +755,24 @@ async function exportImage() {
 
   function drawLimitRow(ctx, cat, item, y) {
     const rowMid = y + ROW_H / 2;
-    ctx.strokeStyle = 'rgba(200,70,70,0.08)';
+    ctx.strokeStyle = EX.limitRowRule;
     ctx.beginPath();
     ctx.moveTo(PAD, y + ROW_H);
     ctx.lineTo(W - PAD, y + ROW_H);
     ctx.stroke();
 
     const catLabel = cat.name.toUpperCase();
-    ctx.font = '500 11px ' + sans;
+    ctx.font = FONT_PILL;
     const cw = ctx.measureText(catLabel).width + 24;
     exRoundRect(ctx, W - PAD - cw, rowMid - 12, cw, 24, 12);
-    ctx.strokeStyle = 'rgba(200,70,70,0.4)';
+    ctx.strokeStyle = EX.limitPillStroke;
     ctx.stroke();
-    ctx.fillStyle = '#d08080';
+    ctx.fillStyle = EX.limitPillText;
     ctx.textAlign = 'center';
     ctx.fillText(catLabel, W - PAD - cw / 2, rowMid + 4);
 
     ctx.textAlign = 'left';
-    ctx.font = '300 17px ' + sans;
+    ctx.font = FONT_BODY;
     ctx.fillStyle = EX.text;
     ctx.fillText(exFitText(ctx, item, W - PAD - cw - PAD - 20), PAD, rowMid + 6);
   }
@@ -761,10 +786,10 @@ async function exportImage() {
     ctx.stroke();
     ctx.font = '500 12px ' + sans;
     ctx.fillStyle = EX.muted;
-    ctx.fillText(title.toUpperCase(), PAD + 28, y + 32);
-    ctx.font = '300 17px ' + sans;
+    ctx.fillText(title.toUpperCase(), PAD + NOTES_TEXT_INSET, y + 32);
+    ctx.font = FONT_BODY;
     ctx.fillStyle = EX.text;
-    lines.forEach((ln, i) => ctx.fillText(ln, PAD + 28, y + 60 + i * 26));
+    lines.forEach((ln, i) => ctx.fillText(ln, PAD + NOTES_TEXT_INSET, y + 60 + i * NOTES_LINE_H));
   }
 
   // ---- build a flat list of blocks to lay out across cards ----
@@ -802,9 +827,9 @@ async function exportImage() {
       draw(ctx, y) {
         ctx.textAlign = 'left';
         ctx.font = '26px ' + serif;
-        ctx.fillStyle = '#e0a0a0';
+        ctx.fillStyle = EX.limitHead;
         ctx.fillText('⛔  Limits', PAD, y + 26);
-        ctx.strokeStyle = 'rgba(200,70,70,0.35)';
+        ctx.strokeStyle = EX.limitRule;
         ctx.beginPath();
         ctx.moveTo(PAD, y + 40);
         ctx.lineTo(W - PAD, y + 40);
@@ -820,8 +845,8 @@ async function exportImage() {
 
   const addNotesBlock = (title, lines) => {
     if (!lines.length) return;
-    const bh = 50 + lines.length * 26;
-    blocks.push({ h: bh + 24, draw(ctx, y) { drawNotesBlock(ctx, title, lines, y, bh); } });
+    const bh = NOTES_HEAD_H + lines.length * NOTES_LINE_H;
+    blocks.push({ h: bh + NOTES_BLOCK_GAP, draw(ctx, y) { drawNotesBlock(ctx, title, lines, y, bh); } });
   };
   addNotesBlock('Additional Hard Limits', limitLines);
   addNotesBlock('Notes', noteLines);
@@ -862,8 +887,8 @@ async function exportImage() {
     ctx.fillStyle = EX.bg;
     ctx.fillRect(0, 0, W, CARD_H);
     const glow = ctx.createRadialGradient(W * 0.2, 200, 0, W * 0.2, 200, 700);
-    glow.addColorStop(0, 'rgba(170,90,20,0.12)');
-    glow.addColorStop(1, 'rgba(170,90,20,0)');
+    glow.addColorStop(0, EX.glow);
+    glow.addColorStop(1, EX.glowFade);
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, W, CARD_H);
 
@@ -907,8 +932,8 @@ async function exportImage() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    if (p < pages.length - 1) await new Promise(resolve => setTimeout(resolve, 300));
+    setTimeout(() => URL.revokeObjectURL(a.href), BLOB_REVOKE_MS);
+    if (p < pages.length - 1) await new Promise(resolve => setTimeout(resolve, DOWNLOAD_GAP_MS));
   }
 
   btn.textContent = 'Downloaded!';
