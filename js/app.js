@@ -1,7 +1,7 @@
 // ============================================================
 // STATE
 // ============================================================
-const S = {
+const state = {
   role: '',
   catInterest: {},   // catId -> val
   itemDir:     {},   // 'catId|item' -> dir val
@@ -27,10 +27,10 @@ function goTo(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + id).classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  buildProg(id);
+  buildProgressBar(id);
 }
 
-function buildProg(screenId) {
+function buildProgressBar(screenId) {
   const el = document.getElementById('prog-' + screenId);
   if (!el) return;
   const ci = STEPS.indexOf(screenId);
@@ -65,7 +65,7 @@ function buildRoleScreen() {
   list.innerHTML = '';
   ROLES.forEach(role => {
     const row = document.createElement('div');
-    row.className = 'role-row' + (S.role === role ? ' on' : '');
+    row.className = 'role-row' + (state.role === role ? ' on' : '');
     row.dataset.role = role;
     row.onclick = () => pickRole(role);
     row.innerHTML = `<div class="r-dot"></div><div class="r-name">${tipSpan(role)}</div>`;
@@ -74,14 +74,14 @@ function buildRoleScreen() {
 }
 
 function pickRole(role) {
-  S.role = role;
+  state.role = role;
   document.querySelectorAll('.role-row').forEach(el => {
     el.classList.toggle('on', el.dataset.role === role);
   });
 }
 
 function fromRole() {
-  if (!S.role) { alert('Please select a role to continue.'); return; }
+  if (!state.role) { alert('Please select a role to continue.'); return; }
   buildCatScreen();
   goTo('categories');
 }
@@ -95,7 +95,7 @@ function escHtml(s) {
 
 const CATEGORY_PREVIEW_COUNT = 3;   // item names shown per category row before "+N more"
 
-function catPreview(cat) {
+function buildCatPreview(cat) {
   const shown = cat.items.slice(0, CATEGORY_PREVIEW_COUNT);
   const more = cat.items.length - shown.length;
   const names = shown.map(escHtml).join(' &middot; ');
@@ -106,21 +106,21 @@ let catListBound = false;
 function buildCatScreen() {
   const list = document.getElementById('cat-list');
   list.innerHTML = '';
-  CATS.forEach(cat => {
+  CATEGORIES.forEach(cat => {
     const row = document.createElement('div');
-    const hasInt = S.catInterest[cat.id] && S.catInterest[cat.id] !== INTEREST_NONE;
+    const hasInt = state.catInterest[cat.id] && state.catInterest[cat.id] !== INTEREST_NONE;
     row.className = 'cat-row' + (hasInt ? ' has-interest' : '');
     row.innerHTML = `
       <div class="cat-main">
         <div class="cat-icon">${catIcon(cat.id)}</div>
         <div class="cat-info">
           <div class="cat-name">${tipSpan(cat.name)}</div>
-          <div class="cat-preview" title="Includes: ${escAttr(cat.items.join(', '))}">${catPreview(cat)}</div>
+          <div class="cat-preview" title="Includes: ${escAttr(cat.items.join(', '))}">${buildCatPreview(cat)}</div>
         </div>
       </div>
       <div class="int-pills" data-cat="${cat.id}">
-        ${INT_LEVELS.map(lvl =>
-          `<button class="i-pill${S.catInterest[cat.id] === lvl.val ? ' on' : ''}"
+        ${INTEREST_LEVELS.map(lvl =>
+          `<button class="i-pill${state.catInterest[cat.id] === lvl.val ? ' on' : ''}"
             data-cat="${cat.id}" data-val="${lvl.val}">${lvl.label}</button>`
         ).join('')}
       </div>`;
@@ -134,7 +134,7 @@ function buildCatScreen() {
     if (!btn) return;
     const catId = btn.dataset.cat;
     const val = btn.dataset.val;
-    S.catInterest[catId] = val;
+    state.catInterest[catId] = val;
     document.querySelectorAll(`.i-pill[data-cat="${catId}"]`).forEach(b => {
       b.classList.toggle('on', b.dataset.val === val);
     });
@@ -144,7 +144,7 @@ function buildCatScreen() {
 }
 
 function fromCategories() {
-  const active = CATS.filter(c => S.catInterest[c.id] && S.catInterest[c.id] !== INTEREST_NONE);
+  const active = CATEGORIES.filter(c => state.catInterest[c.id] && state.catInterest[c.id] !== INTEREST_NONE);
   if (active.length === 0) {
     alert('Please select at least one category with some interest to continue.');
     return;
@@ -156,15 +156,15 @@ function fromCategories() {
 // ============================================================
 // PASS 1
 // ============================================================
-function activeCats() {
-  return CATS.filter(c => S.catInterest[c.id] && S.catInterest[c.id] !== INTEREST_NONE);
+function collectActiveCats() {
+  return CATEGORIES.filter(c => state.catInterest[c.id] && state.catInterest[c.id] !== INTEREST_NONE);
 }
 
 let pass1Bound = false;
 function buildPass1() {
   const body = document.getElementById('pass1-body');
   body.innerHTML = '';
-  activeCats().forEach(cat => {
+  collectActiveCats().forEach(cat => {
     const sec = document.createElement('div');
     sec.className = 'pass-section';
     sec.innerHTML = `<div class="ps-title"><span class="sec-icon">${catIcon(cat.id)}</span>${tipSpan(cat.name)}</div>`;
@@ -175,8 +175,8 @@ function buildPass1() {
       row.innerHTML = `
         <div class="item-name">${tipSpan(item)}</div>
         <div class="dir-pills" data-key="${escAttr(key)}">
-          ${DIRS.map(d =>
-            `<button class="d-pill${S.itemDir[key] === d.val ? ' on' : ''}"
+          ${DIRECTIONS.map(d =>
+            `<button class="d-pill${state.itemDir[key] === d.val ? ' on' : ''}"
               data-key="${escAttr(key)}" data-dir="${d.val}">${d.label}</button>`
           ).join('')}
         </div>`;
@@ -192,7 +192,7 @@ function buildPass1() {
     if (!btn) return;
     const key = btn.dataset.key;
     const dir = btn.dataset.dir;
-    S.itemDir[key] = dir;
+    state.itemDir[key] = dir;
     document.querySelectorAll(`.d-pill[data-key="${escAttr(key)}"]`).forEach(b => {
       b.classList.toggle('on', b.dataset.dir === dir);
     });
@@ -200,7 +200,7 @@ function buildPass1() {
 }
 
 function fromPass1() {
-  const picked = Object.values(S.itemDir).filter(v => v && v !== DIRECTION_NO);
+  const picked = Object.values(state.itemDir).filter(v => v && v !== DIRECTION_NO);
   if (picked.length === 0) {
     alert('Please select at least one item before continuing.');
     return;
@@ -223,9 +223,9 @@ function buildPass2() {
 
   // all categories, not just active: review-screen additions may
   // come from categories that were skipped on the interest step
-  CATS.forEach(cat => {
+  CATEGORIES.forEach(cat => {
     const selItems = cat.items.filter(item => {
-      const d = S.itemDir[itemKey(cat.id, item)];
+      const d = state.itemDir[itemKey(cat.id, item)];
       return d && d !== DIRECTION_NO;
     });
     if (selItems.length === 0) return;
@@ -237,7 +237,7 @@ function buildPass2() {
 
     selItems.forEach(item => {
       const key = itemKey(cat.id, item);
-      const cur = S.itemRate[key] || 0;
+      const cur = state.itemRate[key] || 0;
       const row = document.createElement('div');
       row.className = 'item-row';
       row.innerHTML = `
@@ -264,7 +264,7 @@ function buildPass2() {
     if (!btn) return;
     const key = btn.dataset.key;
     const n = parseInt(btn.dataset.n);
-    S.itemRate[key] = n;
+    state.itemRate[key] = n;
     btn.closest('.rate-dots').querySelectorAll('.r-btn').forEach((b, i) => {
       b.classList.toggle('on', i < n);
     });
@@ -279,7 +279,7 @@ function fromPass2() {
 // ============================================================
 // REVIEW -- "ARE YOU SURE?" (everything NOT selected)
 // ============================================================
-const REV_DIRS = DIRS.filter(d => d.val !== DIRECTION_NO);
+const REVIEW_DIRECTIONS = DIRECTIONS.filter(d => d.val !== DIRECTION_NO);
 
 let reviewBound = false;
 function buildReview() {
@@ -287,9 +287,9 @@ function buildReview() {
   body.innerHTML = '';
   let total = 0;
 
-  CATS.forEach(cat => {
+  CATEGORIES.forEach(cat => {
     const missed = cat.items.filter(item => {
-      const d = S.itemDir[itemKey(cat.id, item)];
+      const d = state.itemDir[itemKey(cat.id, item)];
       return !d || d === DIRECTION_NO;
     });
     if (missed.length === 0) return;
@@ -303,7 +303,7 @@ function buildReview() {
     chips.className = 'rev-chips';
     missed.forEach(item => {
       const key = itemKey(cat.id, item);
-      const isLimit = !!S.itemLimit[key];
+      const isLimit = !!state.itemLimit[key];
       const chip = document.createElement('div');
       chip.className = 'rev-chip' + (isLimit ? ' limit' : '');
       chip.dataset.key = key;
@@ -315,7 +315,7 @@ function buildReview() {
         <div class="rev-controls">
           <div class="rev-mini">
             <span class="rev-mini-lbl">Dir</span>
-            ${REV_DIRS.map(d =>
+            ${REVIEW_DIRECTIONS.map(d =>
               `<button type="button" class="d-pill mini" data-dir="${d.val}">${d.label}</button>`
             ).join('')}
           </div>
@@ -348,14 +348,14 @@ function buildReview() {
       const turningOn = !chip.classList.contains('limit');
       if (turningOn) {
         // hard limit is mutually exclusive with adding as an interest
-        delete S.itemDir[key];
-        delete S.itemRate[key];
-        S.itemLimit[key] = true;
+        delete state.itemDir[key];
+        delete state.itemRate[key];
+        state.itemLimit[key] = true;
         chip.classList.add('limit');
         chip.classList.remove('added');
         chip.querySelectorAll('.d-pill.mini, .r-btn.mini').forEach(b => b.classList.remove('on'));
       } else {
-        delete S.itemLimit[key];
+        delete state.itemLimit[key];
         chip.classList.remove('limit');
       }
       limitBtn.classList.toggle('on', turningOn);
@@ -364,7 +364,7 @@ function buildReview() {
 
     const dirBtn = e.target.closest('.d-pill.mini');
     if (dirBtn) {
-      S.itemDir[key] = dirBtn.dataset.dir;
+      state.itemDir[key] = dirBtn.dataset.dir;
       chip.querySelectorAll('.d-pill.mini').forEach(b => {
         b.classList.toggle('on', b.dataset.dir === dirBtn.dataset.dir);
       });
@@ -374,7 +374,7 @@ function buildReview() {
     const rateBtn = e.target.closest('.r-btn.mini');
     if (rateBtn) {
       const n = parseInt(rateBtn.dataset.n);
-      S.itemRate[key] = n;
+      state.itemRate[key] = n;
       chip.querySelectorAll('.r-btn.mini').forEach((b, i) => {
         b.classList.toggle('on', i < n);
       });
@@ -384,18 +384,18 @@ function buildReview() {
     if (e.target.closest('.rev-chip-name')) {
       if (chip.classList.contains('added')) {
         // un-add
-        delete S.itemDir[key];
-        delete S.itemRate[key];
+        delete state.itemDir[key];
+        delete state.itemRate[key];
         chip.classList.remove('added');
         chip.querySelectorAll('.d-pill.mini, .r-btn.mini').forEach(b => b.classList.remove('on'));
       } else {
         // adding as an interest overrides any hard-limit mark
-        delete S.itemLimit[key];
+        delete state.itemLimit[key];
         chip.classList.remove('limit');
         const limitToggle = chip.querySelector('.limit-btn');
         if (limitToggle) limitToggle.classList.remove('on');
         // quick-add, defaulting to Both
-        S.itemDir[key] = DIRECTION_BOTH;
+        state.itemDir[key] = DIRECTION_BOTH;
         chip.classList.add('added');
         chip.querySelectorAll('.d-pill.mini').forEach(b => {
           b.classList.toggle('on', b.dataset.dir === DIRECTION_BOTH);
@@ -422,15 +422,15 @@ function fromReview() {
 // grabbed on the review screen from skipped categories still count.
 function collectResults() {
   const out = [];
-  CATS.forEach(cat => {
+  CATEGORIES.forEach(cat => {
     const items = cat.items
       .filter(item => {
-        const d = S.itemDir[itemKey(cat.id, item)];
+        const d = state.itemDir[itemKey(cat.id, item)];
         return d && d !== DIRECTION_NO;
       })
       .map(item => {
         const key = itemKey(cat.id, item);
-        return { name: item, dir: S.itemDir[key], rate: S.itemRate[key] || 0 };
+        return { name: item, dir: state.itemDir[key], rate: state.itemRate[key] || 0 };
       })
       .sort((a, b) => b.rate - a.rate);
 
@@ -442,15 +442,15 @@ function collectResults() {
 // Items marked "Hard Limit" on the review ("Are You Sure?") screen.
 function collectLimits() {
   const out = [];
-  CATS.forEach(cat => {
-    const items = cat.items.filter(item => S.itemLimit[itemKey(cat.id, item)]);
+  CATEGORIES.forEach(cat => {
+    const items = cat.items.filter(item => state.itemLimit[itemKey(cat.id, item)]);
     if (items.length > 0) out.push({ id: cat.id, name: cat.name, items });
   });
   return out;
 }
 
 function buildResults() {
-  document.getElementById('res-role').textContent = S.role || 'Not specified';
+  document.getElementById('res-role').textContent = state.role || 'Not specified';
   const body = document.getElementById('res-body');
   body.innerHTML = '';
 
@@ -510,7 +510,7 @@ function buildResults() {
     sec.innerHTML = `<div class="res-sec-title"><span class="sec-icon">${catIcon(secData.id)}</span>${tipSpan(secData.name)}</div>`;
 
     secData.items.forEach(item => {
-      const dirLabel = DIRS.find(d => d.val === item.dir)?.label || item.dir;
+      const dirLabel = DIRECTIONS.find(d => d.val === item.dir)?.label || item.dir;
       const meter = item.rate > 0
         ? `<span class="res-bar">${RATING_SCALE.map(n =>
             `<span class="res-seg${n <= item.rate ? ' fill' : ''}"></span>`).join('')}
@@ -541,13 +541,13 @@ function copyResults() {
   const lines = [];
 
   lines.push('=== MY KINK COMPASS ===');
-  lines.push('Role: ' + (S.role || 'Not specified'));
+  lines.push('Role: ' + (state.role || 'Not specified'));
   lines.push('');
 
   collectResults().forEach(cat => {
     lines.push('--- ' + cat.name.toUpperCase() + ' ---');
     cat.items.forEach(item => {
-      const dirLabel = DIRS.find(d => d.val === item.dir)?.label || item.dir;
+      const dirLabel = DIRECTIONS.find(d => d.val === item.dir)?.label || item.dir;
       const stars = item.rate > 0
         ? '*'.repeat(item.rate) + '.'.repeat(RATING_MAX - item.rate)
         : 'unrated';
@@ -609,7 +609,7 @@ function fallbackCopy(text, cb) {
 // ============================================================
 // IMAGE EXPORT -- renders all answers + scales to a PNG graphic
 // ============================================================
-const EX = {
+const exportPalette = {
   bg:      '#0e0805',
   card:    '#1c110a',
   border:  'rgba(195,130,50,0.28)',
@@ -711,25 +711,25 @@ async function exportImage() {
   // ---- draw helpers (operate relative to a block's own yTop) ----
   function drawItemRow(ctx, item, y) {
     const rowMid = y + ROW_H / 2;
-    ctx.strokeStyle = EX.rowRule;
+    ctx.strokeStyle = exportPalette.rowRule;
     ctx.beginPath();
     ctx.moveTo(PAD, y + ROW_H);
     ctx.lineTo(W - PAD, y + ROW_H);
     ctx.stroke();
 
-    const dirLabel = (DIRS.find(d => d.val === item.dir)?.label || item.dir).toUpperCase();
+    const dirLabel = (DIRECTIONS.find(d => d.val === item.dir)?.label || item.dir).toUpperCase();
     ctx.font = FONT_PILL;
     const dw = ctx.measureText(dirLabel).width + 24;
     exRoundRect(ctx, dirX - dw, rowMid - 12, dw, 24, 12);
-    ctx.strokeStyle = EX.pillStroke;
+    ctx.strokeStyle = exportPalette.pillStroke;
     ctx.stroke();
-    ctx.fillStyle = EX.accent;
+    ctx.fillStyle = exportPalette.accent;
     ctx.textAlign = 'center';
     ctx.fillText(dirLabel, dirX - dw / 2, rowMid + 4);
 
     ctx.textAlign = 'left';
     ctx.font = FONT_BODY;
-    ctx.fillStyle = EX.text;
+    ctx.fillStyle = exportPalette.text;
     ctx.fillText(exFitText(ctx, item.name, dirX - dw - PAD - 20), PAD, rowMid + 6);
 
     for (let n = 1; n <= RATING_MAX; n++) {
@@ -737,17 +737,17 @@ async function exportImage() {
       exRoundRect(ctx, sx, rowMid - 5, SEG_W, 10, 5);
       if (item.rate >= n) {
         const g = ctx.createLinearGradient(sx, 0, sx + SEG_W, 0);
-        g.addColorStop(0, EX.accent);
-        g.addColorStop(1, EX.accent2);
+        g.addColorStop(0, exportPalette.accent);
+        g.addColorStop(1, exportPalette.accent2);
         ctx.fillStyle = g;
         ctx.fill();
       } else {
-        ctx.fillStyle = EX.segOff;
+        ctx.fillStyle = exportPalette.segOff;
         ctx.fill();
       }
     }
     ctx.font = '300 10px ' + sans;
-    ctx.fillStyle = item.rate > 0 ? EX.muted : EX.dim;
+    ctx.fillStyle = item.rate > 0 ? exportPalette.muted : exportPalette.dim;
     ctx.textAlign = 'right';
     ctx.fillText(item.rate > 0 ? item.rate + ' / 5' : 'unrated', W - PAD, rowMid + 18);
     ctx.textAlign = 'left';
@@ -755,7 +755,7 @@ async function exportImage() {
 
   function drawLimitRow(ctx, cat, item, y) {
     const rowMid = y + ROW_H / 2;
-    ctx.strokeStyle = EX.limitRowRule;
+    ctx.strokeStyle = exportPalette.limitRowRule;
     ctx.beginPath();
     ctx.moveTo(PAD, y + ROW_H);
     ctx.lineTo(W - PAD, y + ROW_H);
@@ -765,30 +765,30 @@ async function exportImage() {
     ctx.font = FONT_PILL;
     const cw = ctx.measureText(catLabel).width + 24;
     exRoundRect(ctx, W - PAD - cw, rowMid - 12, cw, 24, 12);
-    ctx.strokeStyle = EX.limitPillStroke;
+    ctx.strokeStyle = exportPalette.limitPillStroke;
     ctx.stroke();
-    ctx.fillStyle = EX.limitPillText;
+    ctx.fillStyle = exportPalette.limitPillText;
     ctx.textAlign = 'center';
     ctx.fillText(catLabel, W - PAD - cw / 2, rowMid + 4);
 
     ctx.textAlign = 'left';
     ctx.font = FONT_BODY;
-    ctx.fillStyle = EX.text;
+    ctx.fillStyle = exportPalette.text;
     ctx.fillText(exFitText(ctx, item, W - PAD - cw - PAD - 20), PAD, rowMid + 6);
   }
 
   function drawNotesBlock(ctx, title, lines, y, bh) {
     ctx.textAlign = 'left';
-    ctx.fillStyle = EX.card;
+    ctx.fillStyle = exportPalette.card;
     exRoundRect(ctx, PAD, y, W - PAD * 2, bh, 3);
     ctx.fill();
-    ctx.strokeStyle = EX.border;
+    ctx.strokeStyle = exportPalette.border;
     ctx.stroke();
     ctx.font = '500 12px ' + sans;
-    ctx.fillStyle = EX.muted;
+    ctx.fillStyle = exportPalette.muted;
     ctx.fillText(title.toUpperCase(), PAD + NOTES_TEXT_INSET, y + 32);
     ctx.font = FONT_BODY;
-    ctx.fillStyle = EX.text;
+    ctx.fillStyle = exportPalette.text;
     lines.forEach((ln, i) => ctx.fillText(ln, PAD + NOTES_TEXT_INSET, y + 60 + i * NOTES_LINE_H));
   }
 
@@ -803,9 +803,9 @@ async function exportImage() {
       draw(ctx, y) {
         ctx.textAlign = 'left';
         ctx.font = '26px ' + serif;
-        ctx.fillStyle = EX.accent2;
+        ctx.fillStyle = exportPalette.accent2;
         ctx.fillText(catIcon(sec.id) + '  ' + sec.name, PAD, y + 26);
-        ctx.strokeStyle = EX.border;
+        ctx.strokeStyle = exportPalette.border;
         ctx.beginPath();
         ctx.moveTo(PAD, y + 40);
         ctx.lineTo(W - PAD, y + 40);
@@ -827,9 +827,9 @@ async function exportImage() {
       draw(ctx, y) {
         ctx.textAlign = 'left';
         ctx.font = '26px ' + serif;
-        ctx.fillStyle = EX.limitHead;
+        ctx.fillStyle = exportPalette.limitHead;
         ctx.fillText('⛔  Limits', PAD, y + 26);
-        ctx.strokeStyle = EX.limitRule;
+        ctx.strokeStyle = exportPalette.limitRule;
         ctx.beginPath();
         ctx.moveTo(PAD, y + 40);
         ctx.lineTo(W - PAD, y + 40);
@@ -884,29 +884,29 @@ async function exportImage() {
     ctx.textBaseline = 'alphabetic';
 
     // background
-    ctx.fillStyle = EX.bg;
+    ctx.fillStyle = exportPalette.bg;
     ctx.fillRect(0, 0, W, CARD_H);
     const glow = ctx.createRadialGradient(W * 0.2, 200, 0, W * 0.2, 200, 700);
-    glow.addColorStop(0, EX.glow);
-    glow.addColorStop(1, EX.glowFade);
+    glow.addColorStop(0, exportPalette.glow);
+    glow.addColorStop(1, exportPalette.glowFade);
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, W, CARD_H);
 
     // header (repeated on every card so each one stands alone)
     ctx.textAlign = 'center';
-    ctx.fillStyle = EX.accent3;
+    ctx.fillStyle = exportPalette.accent3;
     ctx.font = '300 40px ' + serif;
     ctx.fillText('Kink Compass', W / 2, 56);
-    ctx.fillStyle = EX.muted;
+    ctx.fillStyle = exportPalette.muted;
     ctx.font = 'italic 300 18px ' + serif;
-    ctx.fillText(S.role || 'Not specified', W / 2, 84);
+    ctx.fillText(state.role || 'Not specified', W / 2, 84);
     if (pages.length > 1) {
       ctx.textAlign = 'right';
       ctx.font = '500 13px ' + sans;
-      ctx.fillStyle = EX.dim;
+      ctx.fillStyle = exportPalette.dim;
       ctx.fillText(`${p + 1} / ${pages.length}`, W - PAD, 56);
     }
-    ctx.strokeStyle = EX.border;
+    ctx.strokeStyle = exportPalette.border;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(PAD, HEADER_H - 20);
@@ -919,7 +919,7 @@ async function exportImage() {
     // footer
     ctx.textAlign = 'center';
     ctx.font = 'italic 300 14px ' + serif;
-    ctx.fillStyle = EX.dim;
+    ctx.fillStyle = exportPalette.dim;
     ctx.fillText('Created with Kink Compass • ' + dateStr, W / 2, CARD_H - 28);
 
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
