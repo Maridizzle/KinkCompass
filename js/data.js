@@ -1,4 +1,14 @@
 // ============================================================
+// data.js  —  static content the wizard reads: roles, interest
+//             levels, directions, categories + their items,
+//             category icons, and tooltip descriptions
+// Exposes: ROLES, INTEREST_NONE, DIRECTION_NO, DIRECTION_BOTH,
+//   INTEREST_LEVELS, DIRECTIONS, CATEGORIES, CAT_ICONS, catIcon,
+//   TOOLTIPS
+// Loads before: app.js
+// ============================================================
+
+// ============================================================
 // DATA
 // ============================================================
 const ROLES = [
@@ -15,21 +25,21 @@ const INTEREST_NONE  = 'none';   // category interest: skip it entirely
 const DIRECTION_NO   = 'no';     // item direction: not selected
 const DIRECTION_BOTH = 'both';   // item direction: default for quick-add on the review screen
 
-const INT_LEVELS = [
+const INTEREST_LEVELS = [
   { val: INTEREST_NONE, label: 'None' },
   { val: 'little',  label: 'A Little' },
   { val: 'kind_of', label: 'Kind Of' },
   { val: 'very',    label: 'Very Interested' }
 ];
 
-const DIRS = [
+const DIRECTIONS = [
   { val: 'give',    label: 'Give' },
   { val: 'receive', label: 'Receive' },
   { val: DIRECTION_BOTH, label: 'Both' },
   { val: DIRECTION_NO,   label: 'No' }
 ];
 
-const CATS = [
+const CATEGORIES = [
   { id: 'romance', name: 'Romance & Affection', items: [
     'Candlelit dinners', 'Slow dancing', 'Love notes or letters',
     'Surprise dates', 'Cuddling on the couch', 'Holding hands in public',

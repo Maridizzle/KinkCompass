@@ -1,7 +1,16 @@
 // ============================================================
+// app.js  —  wizard state, navigation, screen builders, text
+//            copy, PNG export, and the mobile tooltip popup
+// Exposes (wired from index.html onclick): consentYes, consentNo,
+//   fromRole, fromCategories, fromPass1, fromPass2, fromReview,
+//   backToPass2, goTo, copyResults, exportImage
+// Loads after: data.js (which defines ROLES, CATEGORIES, etc.)
+// ============================================================
+
+// ============================================================
 // STATE
 // ============================================================
-const S = {
+const state = {
   role: '',
   catInterest: {},   // catId -> val
   itemDir:     {},   // 'catId|item' -> dir val
@@ -27,10 +36,15 @@ function goTo(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + id).classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  buildProg(id);
+  buildProgressBar(id);
 }
 
-function buildProg(screenId) {
+/**
+ * Render the progress dots and step label for one screen.
+ * @param {string} screenId  a key from STEPS.
+ * why: results has no #prog element, so the early return covers it.
+ */
+function buildProgressBar(screenId) {
   const el = document.getElementById('prog-' + screenId);
   if (!el) return;
   const ci = STEPS.indexOf(screenId);
@@ -60,12 +74,15 @@ function consentNo() {
 // ============================================================
 // ROLE
 // ============================================================
+/**
+ * Build the role-selection list from ROLES, marking the current pick.
+ */
 function buildRoleScreen() {
   const list = document.getElementById('role-list');
   list.innerHTML = '';
   ROLES.forEach(role => {
     const row = document.createElement('div');
-    row.className = 'role-row' + (S.role === role ? ' on' : '');
+    row.className = 'role-row' + (state.role === role ? ' on' : '');
     row.dataset.role = role;
     row.onclick = () => pickRole(role);
     row.innerHTML = `<div class="r-dot"></div><div class="r-name">${tipSpan(role)}</div>`;
@@ -74,14 +91,14 @@ function buildRoleScreen() {
 }
 
 function pickRole(role) {
-  S.role = role;
+  state.role = role;
   document.querySelectorAll('.role-row').forEach(el => {
     el.classList.toggle('on', el.dataset.role === role);
   });
 }
 
 function fromRole() {
-  if (!S.role) { alert('Please select a role to continue.'); return; }
+  if (!state.role) { alert('Please select a role to continue.'); return; }
   buildCatScreen();
   goTo('categories');
 }
@@ -95,7 +112,12 @@ function escHtml(s) {
 
 const CATEGORY_PREVIEW_COUNT = 3;   // item names shown per category row before "+N more"
 
-function catPreview(cat) {
+/**
+ * Build the "first few items + N more" preview line for a category row.
+ * @param {object} cat  a CATEGORIES entry.
+ * @returns {string} HTML string of escaped item names.
+ */
+function buildCatPreview(cat) {
   const shown = cat.items.slice(0, CATEGORY_PREVIEW_COUNT);
   const more = cat.items.length - shown.length;
   const names = shown.map(escHtml).join(' &middot; ');
@@ -103,24 +125,29 @@ function catPreview(cat) {
 }
 
 let catListBound = false;
+/**
+ * Build the category-interest screen and bind its pill clicks once.
+ * why: the click listener is delegated on the list and guarded by
+ *      catListBound so rebuilding the rows never stacks handlers.
+ */
 function buildCatScreen() {
   const list = document.getElementById('cat-list');
   list.innerHTML = '';
-  CATS.forEach(cat => {
+  CATEGORIES.forEach(cat => {
     const row = document.createElement('div');
-    const hasInt = S.catInterest[cat.id] && S.catInterest[cat.id] !== INTEREST_NONE;
+    const hasInt = state.catInterest[cat.id] && state.catInterest[cat.id] !== INTEREST_NONE;
     row.className = 'cat-row' + (hasInt ? ' has-interest' : '');
     row.innerHTML = `
       <div class="cat-main">
         <div class="cat-icon">${catIcon(cat.id)}</div>
         <div class="cat-info">
           <div class="cat-name">${tipSpan(cat.name)}</div>
-          <div class="cat-preview" title="Includes: ${escAttr(cat.items.join(', '))}">${catPreview(cat)}</div>
+          <div class="cat-preview" title="Includes: ${escAttr(cat.items.join(', '))}">${buildCatPreview(cat)}</div>
         </div>
       </div>
       <div class="int-pills" data-cat="${cat.id}">
-        ${INT_LEVELS.map(lvl =>
-          `<button class="i-pill${S.catInterest[cat.id] === lvl.val ? ' on' : ''}"
+        ${INTEREST_LEVELS.map(lvl =>
+          `<button class="i-pill${state.catInterest[cat.id] === lvl.val ? ' on' : ''}"
             data-cat="${cat.id}" data-val="${lvl.val}">${lvl.label}</button>`
         ).join('')}
       </div>`;
@@ -134,7 +161,7 @@ function buildCatScreen() {
     if (!btn) return;
     const catId = btn.dataset.cat;
     const val = btn.dataset.val;
-    S.catInterest[catId] = val;
+    state.catInterest[catId] = val;
     document.querySelectorAll(`.i-pill[data-cat="${catId}"]`).forEach(b => {
       b.classList.toggle('on', b.dataset.val === val);
     });
@@ -143,8 +170,11 @@ function buildCatScreen() {
   });
 }
 
+/**
+ * Advance from categories to pass 1, requiring one non-none interest.
+ */
 function fromCategories() {
-  const active = CATS.filter(c => S.catInterest[c.id] && S.catInterest[c.id] !== INTEREST_NONE);
+  const active = CATEGORIES.filter(c => state.catInterest[c.id] && state.catInterest[c.id] !== INTEREST_NONE);
   if (active.length === 0) {
     alert('Please select at least one category with some interest to continue.');
     return;
@@ -156,15 +186,19 @@ function fromCategories() {
 // ============================================================
 // PASS 1
 // ============================================================
-function activeCats() {
-  return CATS.filter(c => S.catInterest[c.id] && S.catInterest[c.id] !== INTEREST_NONE);
+function collectActiveCats() {
+  return CATEGORIES.filter(c => state.catInterest[c.id] && state.catInterest[c.id] !== INTEREST_NONE);
 }
 
 let pass1Bound = false;
+/**
+ * Build the direction (give/receive/both/no) screen for active
+ * categories, binding its delegated pill clicks once.
+ */
 function buildPass1() {
   const body = document.getElementById('pass1-body');
   body.innerHTML = '';
-  activeCats().forEach(cat => {
+  collectActiveCats().forEach(cat => {
     const sec = document.createElement('div');
     sec.className = 'pass-section';
     sec.innerHTML = `<div class="ps-title"><span class="sec-icon">${catIcon(cat.id)}</span>${tipSpan(cat.name)}</div>`;
@@ -175,8 +209,8 @@ function buildPass1() {
       row.innerHTML = `
         <div class="item-name">${tipSpan(item)}</div>
         <div class="dir-pills" data-key="${escAttr(key)}">
-          ${DIRS.map(d =>
-            `<button class="d-pill${S.itemDir[key] === d.val ? ' on' : ''}"
+          ${DIRECTIONS.map(d =>
+            `<button class="d-pill${state.itemDir[key] === d.val ? ' on' : ''}"
               data-key="${escAttr(key)}" data-dir="${d.val}">${d.label}</button>`
           ).join('')}
         </div>`;
@@ -192,15 +226,19 @@ function buildPass1() {
     if (!btn) return;
     const key = btn.dataset.key;
     const dir = btn.dataset.dir;
-    S.itemDir[key] = dir;
+    state.itemDir[key] = dir;
     document.querySelectorAll(`.d-pill[data-key="${escAttr(key)}"]`).forEach(b => {
       b.classList.toggle('on', b.dataset.dir === dir);
     });
   });
 }
 
+/**
+ * Advance from pass 1 to pass 2, requiring at least one item with a
+ * direction other than "no".
+ */
 function fromPass1() {
-  const picked = Object.values(S.itemDir).filter(v => v && v !== DIRECTION_NO);
+  const picked = Object.values(state.itemDir).filter(v => v && v !== DIRECTION_NO);
   if (picked.length === 0) {
     alert('Please select at least one item before continuing.');
     return;
@@ -216,6 +254,11 @@ const RATING_MAX   = 5;             // ratings run 1..RATING_MAX
 const RATING_SCALE = [1,2,3,4,5];   // one button / meter segment per step, in order
 
 let pass2Bound = false;
+/**
+ * Build the 1..5 rating screen for every selected item.
+ * why: it walks all categories, not just active ones, because the
+ *      review screen can add items from categories skipped earlier.
+ */
 function buildPass2() {
   const body = document.getElementById('pass2-body');
   body.innerHTML = '';
@@ -223,9 +266,9 @@ function buildPass2() {
 
   // all categories, not just active: review-screen additions may
   // come from categories that were skipped on the interest step
-  CATS.forEach(cat => {
+  CATEGORIES.forEach(cat => {
     const selItems = cat.items.filter(item => {
-      const d = S.itemDir[itemKey(cat.id, item)];
+      const d = state.itemDir[itemKey(cat.id, item)];
       return d && d !== DIRECTION_NO;
     });
     if (selItems.length === 0) return;
@@ -237,7 +280,7 @@ function buildPass2() {
 
     selItems.forEach(item => {
       const key = itemKey(cat.id, item);
-      const cur = S.itemRate[key] || 0;
+      const cur = state.itemRate[key] || 0;
       const row = document.createElement('div');
       row.className = 'item-row';
       row.innerHTML = `
@@ -264,7 +307,7 @@ function buildPass2() {
     if (!btn) return;
     const key = btn.dataset.key;
     const n = parseInt(btn.dataset.n);
-    S.itemRate[key] = n;
+    state.itemRate[key] = n;
     btn.closest('.rate-dots').querySelectorAll('.r-btn').forEach((b, i) => {
       b.classList.toggle('on', i < n);
     });
@@ -279,17 +322,23 @@ function fromPass2() {
 // ============================================================
 // REVIEW -- "ARE YOU SURE?" (everything NOT selected)
 // ============================================================
-const REV_DIRS = DIRS.filter(d => d.val !== DIRECTION_NO);
+const REVIEW_DIRECTIONS = DIRECTIONS.filter(d => d.val !== DIRECTION_NO);
 
 let reviewBound = false;
+/**
+ * Build the "Are You Sure?" screen: every item NOT yet selected, each
+ * with quick-add, direction, rating, and a hard-limit toggle.
+ * why: hard-limit and quick-add are mutually exclusive, so toggling
+ *      one clears the other's state and its on-classes.
+ */
 function buildReview() {
   const body = document.getElementById('review-body');
   body.innerHTML = '';
   let total = 0;
 
-  CATS.forEach(cat => {
+  CATEGORIES.forEach(cat => {
     const missed = cat.items.filter(item => {
-      const d = S.itemDir[itemKey(cat.id, item)];
+      const d = state.itemDir[itemKey(cat.id, item)];
       return !d || d === DIRECTION_NO;
     });
     if (missed.length === 0) return;
@@ -303,7 +352,7 @@ function buildReview() {
     chips.className = 'rev-chips';
     missed.forEach(item => {
       const key = itemKey(cat.id, item);
-      const isLimit = !!S.itemLimit[key];
+      const isLimit = !!state.itemLimit[key];
       const chip = document.createElement('div');
       chip.className = 'rev-chip' + (isLimit ? ' limit' : '');
       chip.dataset.key = key;
@@ -315,7 +364,7 @@ function buildReview() {
         <div class="rev-controls">
           <div class="rev-mini">
             <span class="rev-mini-lbl">Dir</span>
-            ${REV_DIRS.map(d =>
+            ${REVIEW_DIRECTIONS.map(d =>
               `<button type="button" class="d-pill mini" data-dir="${d.val}">${d.label}</button>`
             ).join('')}
           </div>
@@ -348,14 +397,14 @@ function buildReview() {
       const turningOn = !chip.classList.contains('limit');
       if (turningOn) {
         // hard limit is mutually exclusive with adding as an interest
-        delete S.itemDir[key];
-        delete S.itemRate[key];
-        S.itemLimit[key] = true;
+        delete state.itemDir[key];
+        delete state.itemRate[key];
+        state.itemLimit[key] = true;
         chip.classList.add('limit');
         chip.classList.remove('added');
         chip.querySelectorAll('.d-pill.mini, .r-btn.mini').forEach(b => b.classList.remove('on'));
       } else {
-        delete S.itemLimit[key];
+        delete state.itemLimit[key];
         chip.classList.remove('limit');
       }
       limitBtn.classList.toggle('on', turningOn);
@@ -364,7 +413,7 @@ function buildReview() {
 
     const dirBtn = e.target.closest('.d-pill.mini');
     if (dirBtn) {
-      S.itemDir[key] = dirBtn.dataset.dir;
+      state.itemDir[key] = dirBtn.dataset.dir;
       chip.querySelectorAll('.d-pill.mini').forEach(b => {
         b.classList.toggle('on', b.dataset.dir === dirBtn.dataset.dir);
       });
@@ -374,7 +423,7 @@ function buildReview() {
     const rateBtn = e.target.closest('.r-btn.mini');
     if (rateBtn) {
       const n = parseInt(rateBtn.dataset.n);
-      S.itemRate[key] = n;
+      state.itemRate[key] = n;
       chip.querySelectorAll('.r-btn.mini').forEach((b, i) => {
         b.classList.toggle('on', i < n);
       });
@@ -384,18 +433,18 @@ function buildReview() {
     if (e.target.closest('.rev-chip-name')) {
       if (chip.classList.contains('added')) {
         // un-add
-        delete S.itemDir[key];
-        delete S.itemRate[key];
+        delete state.itemDir[key];
+        delete state.itemRate[key];
         chip.classList.remove('added');
         chip.querySelectorAll('.d-pill.mini, .r-btn.mini').forEach(b => b.classList.remove('on'));
       } else {
         // adding as an interest overrides any hard-limit mark
-        delete S.itemLimit[key];
+        delete state.itemLimit[key];
         chip.classList.remove('limit');
         const limitToggle = chip.querySelector('.limit-btn');
         if (limitToggle) limitToggle.classList.remove('on');
         // quick-add, defaulting to Both
-        S.itemDir[key] = DIRECTION_BOTH;
+        state.itemDir[key] = DIRECTION_BOTH;
         chip.classList.add('added');
         chip.querySelectorAll('.d-pill.mini').forEach(b => {
           b.classList.toggle('on', b.dataset.dir === DIRECTION_BOTH);
@@ -418,19 +467,23 @@ function fromReview() {
 // ============================================================
 // RESULTS
 // ============================================================
-// Collects across ALL categories (not just active ones) so items
-// grabbed on the review screen from skipped categories still count.
+/**
+ * Collect selected items per category, sorted by rating descending.
+ * @returns {Array<{id,name,items:Array<{name,dir,rate}>}>}
+ * why: walks ALL categories, not just active ones, so items grabbed on
+ *      the review screen from skipped categories still count.
+ */
 function collectResults() {
   const out = [];
-  CATS.forEach(cat => {
+  CATEGORIES.forEach(cat => {
     const items = cat.items
       .filter(item => {
-        const d = S.itemDir[itemKey(cat.id, item)];
+        const d = state.itemDir[itemKey(cat.id, item)];
         return d && d !== DIRECTION_NO;
       })
       .map(item => {
         const key = itemKey(cat.id, item);
-        return { name: item, dir: S.itemDir[key], rate: S.itemRate[key] || 0 };
+        return { name: item, dir: state.itemDir[key], rate: state.itemRate[key] || 0 };
       })
       .sort((a, b) => b.rate - a.rate);
 
@@ -439,18 +492,26 @@ function collectResults() {
   return out;
 }
 
-// Items marked "Hard Limit" on the review ("Are You Sure?") screen.
+/**
+ * Collect items marked "Hard Limit" on the review screen, per category.
+ * @returns {Array<{id,name,items:string[]}>}
+ */
 function collectLimits() {
   const out = [];
-  CATS.forEach(cat => {
-    const items = cat.items.filter(item => S.itemLimit[itemKey(cat.id, item)]);
+  CATEGORIES.forEach(cat => {
+    const items = cat.items.filter(item => state.itemLimit[itemKey(cat.id, item)]);
     if (items.length > 0) out.push({ id: cat.id, name: cat.name, items });
   });
   return out;
 }
 
+/**
+ * Render the results screen: summary tiles, a limits section, then one
+ * section per category. Shows an empty-state message when nothing was
+ * selected and no limits were marked.
+ */
 function buildResults() {
-  document.getElementById('res-role').textContent = S.role || 'Not specified';
+  document.getElementById('res-role').textContent = state.role || 'Not specified';
   const body = document.getElementById('res-body');
   body.innerHTML = '';
 
@@ -510,7 +571,7 @@ function buildResults() {
     sec.innerHTML = `<div class="res-sec-title"><span class="sec-icon">${catIcon(secData.id)}</span>${tipSpan(secData.name)}</div>`;
 
     secData.items.forEach(item => {
-      const dirLabel = DIRS.find(d => d.val === item.dir)?.label || item.dir;
+      const dirLabel = DIRECTIONS.find(d => d.val === item.dir)?.label || item.dir;
       const meter = item.rate > 0
         ? `<span class="res-bar">${RATING_SCALE.map(n =>
             `<span class="res-seg${n <= item.rate ? ' fill' : ''}"></span>`).join('')}
@@ -535,19 +596,23 @@ function buildResults() {
 // ============================================================
 const BUTTON_CONFIRM_MS = 2600;   // how long "Copied!" / "Downloaded!" stays on the button
 
+/**
+ * Format the current results as plain text and copy to the clipboard,
+ * falling back to a hidden textarea where the Clipboard API is absent.
+ */
 function copyResults() {
   const hardLimits = document.getElementById('hard-limits').value.trim();
   const extraNotes = document.getElementById('extra-notes').value.trim();
   const lines = [];
 
   lines.push('=== MY KINK COMPASS ===');
-  lines.push('Role: ' + (S.role || 'Not specified'));
+  lines.push('Role: ' + (state.role || 'Not specified'));
   lines.push('');
 
   collectResults().forEach(cat => {
     lines.push('--- ' + cat.name.toUpperCase() + ' ---');
     cat.items.forEach(item => {
-      const dirLabel = DIRS.find(d => d.val === item.dir)?.label || item.dir;
+      const dirLabel = DIRECTIONS.find(d => d.val === item.dir)?.label || item.dir;
       const stars = item.rate > 0
         ? '*'.repeat(item.rate) + '.'.repeat(RATING_MAX - item.rate)
         : 'unrated';
@@ -595,6 +660,12 @@ function copyResults() {
   }
 }
 
+/**
+ * Copy text via a temporary textarea and execCommand, for browsers
+ * without navigator.clipboard.
+ * @param {string} text  the text to copy.
+ * @param {Function} cb  called on success.
+ */
 function fallbackCopy(text, cb) {
   const ta = document.createElement('textarea');
   ta.value = text;
@@ -609,7 +680,7 @@ function fallbackCopy(text, cb) {
 // ============================================================
 // IMAGE EXPORT -- renders all answers + scales to a PNG graphic
 // ============================================================
-const EX = {
+const exportPalette = {
   bg:      '#0e0805',
   card:    '#1c110a',
   border:  'rgba(195,130,50,0.28)',
@@ -645,6 +716,13 @@ function exRoundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+/**
+ * Word-wrap text to a pixel width using the canvas font metrics.
+ * @param {CanvasRenderingContext2D} ctx  a context with its font set.
+ * @param {string} text  may contain newlines, which force breaks.
+ * @param {number} maxW  max line width in pixels.
+ * @returns {string[]} the wrapped lines.
+ */
 function exWrapText(ctx, text, maxW) {
   const lines = [];
   text.split('\n').forEach(raw => {
@@ -665,6 +743,13 @@ function exWrapText(ctx, text, maxW) {
   return lines;
 }
 
+/**
+ * Truncate text with an ellipsis so it fits within a pixel width.
+ * @param {CanvasRenderingContext2D} ctx  a context with its font set.
+ * @param {string} text  the text to fit.
+ * @param {number} maxW  max width in pixels.
+ * @returns {string} the original text, or a truncated "…" form.
+ */
 function exFitText(ctx, text, maxW) {
   if (ctx.measureText(text).width <= maxW) return text;
   let t = text;
@@ -674,6 +759,14 @@ function exFitText(ctx, text, maxW) {
   return t + '…';
 }
 
+/**
+ * Render the results to phone-sized "story card" PNGs and download them.
+ * Lays content out as fixed-height blocks, paginates them across cards,
+ * then draws and downloads each card in turn.
+ * why: one PNG per card keeps every page readable on a phone without
+ *      zooming; a section header is fused to its first row so a header
+ *      never lands alone at the bottom of a card.
+ */
 async function exportImage() {
   const btn = document.getElementById('export-btn');
   btn.textContent = 'Rendering…';
@@ -709,27 +802,31 @@ async function exportImage() {
   const noteLines = extraNotes ? exWrapText(mctx, extraNotes, W - PAD * 2 - NOTES_WRAP_INSET) : [];
 
   // ---- draw helpers (operate relative to a block's own yTop) ----
+  /**
+   * Draw one result row: name, direction pill, and the 5-segment meter.
+   * @param {number} y  the row's top, in card coordinates.
+   */
   function drawItemRow(ctx, item, y) {
     const rowMid = y + ROW_H / 2;
-    ctx.strokeStyle = EX.rowRule;
+    ctx.strokeStyle = exportPalette.rowRule;
     ctx.beginPath();
     ctx.moveTo(PAD, y + ROW_H);
     ctx.lineTo(W - PAD, y + ROW_H);
     ctx.stroke();
 
-    const dirLabel = (DIRS.find(d => d.val === item.dir)?.label || item.dir).toUpperCase();
+    const dirLabel = (DIRECTIONS.find(d => d.val === item.dir)?.label || item.dir).toUpperCase();
     ctx.font = FONT_PILL;
     const dw = ctx.measureText(dirLabel).width + 24;
     exRoundRect(ctx, dirX - dw, rowMid - 12, dw, 24, 12);
-    ctx.strokeStyle = EX.pillStroke;
+    ctx.strokeStyle = exportPalette.pillStroke;
     ctx.stroke();
-    ctx.fillStyle = EX.accent;
+    ctx.fillStyle = exportPalette.accent;
     ctx.textAlign = 'center';
     ctx.fillText(dirLabel, dirX - dw / 2, rowMid + 4);
 
     ctx.textAlign = 'left';
     ctx.font = FONT_BODY;
-    ctx.fillStyle = EX.text;
+    ctx.fillStyle = exportPalette.text;
     ctx.fillText(exFitText(ctx, item.name, dirX - dw - PAD - 20), PAD, rowMid + 6);
 
     for (let n = 1; n <= RATING_MAX; n++) {
@@ -737,25 +834,29 @@ async function exportImage() {
       exRoundRect(ctx, sx, rowMid - 5, SEG_W, 10, 5);
       if (item.rate >= n) {
         const g = ctx.createLinearGradient(sx, 0, sx + SEG_W, 0);
-        g.addColorStop(0, EX.accent);
-        g.addColorStop(1, EX.accent2);
+        g.addColorStop(0, exportPalette.accent);
+        g.addColorStop(1, exportPalette.accent2);
         ctx.fillStyle = g;
         ctx.fill();
       } else {
-        ctx.fillStyle = EX.segOff;
+        ctx.fillStyle = exportPalette.segOff;
         ctx.fill();
       }
     }
     ctx.font = '300 10px ' + sans;
-    ctx.fillStyle = item.rate > 0 ? EX.muted : EX.dim;
+    ctx.fillStyle = item.rate > 0 ? exportPalette.muted : exportPalette.dim;
     ctx.textAlign = 'right';
     ctx.fillText(item.rate > 0 ? item.rate + ' / 5' : 'unrated', W - PAD, rowMid + 18);
     ctx.textAlign = 'left';
   }
 
+  /**
+   * Draw one hard-limit row: item name and its category tag.
+   * @param {number} y  the row's top, in card coordinates.
+   */
   function drawLimitRow(ctx, cat, item, y) {
     const rowMid = y + ROW_H / 2;
-    ctx.strokeStyle = EX.limitRowRule;
+    ctx.strokeStyle = exportPalette.limitRowRule;
     ctx.beginPath();
     ctx.moveTo(PAD, y + ROW_H);
     ctx.lineTo(W - PAD, y + ROW_H);
@@ -765,30 +866,35 @@ async function exportImage() {
     ctx.font = FONT_PILL;
     const cw = ctx.measureText(catLabel).width + 24;
     exRoundRect(ctx, W - PAD - cw, rowMid - 12, cw, 24, 12);
-    ctx.strokeStyle = EX.limitPillStroke;
+    ctx.strokeStyle = exportPalette.limitPillStroke;
     ctx.stroke();
-    ctx.fillStyle = EX.limitPillText;
+    ctx.fillStyle = exportPalette.limitPillText;
     ctx.textAlign = 'center';
     ctx.fillText(catLabel, W - PAD - cw / 2, rowMid + 4);
 
     ctx.textAlign = 'left';
     ctx.font = FONT_BODY;
-    ctx.fillStyle = EX.text;
+    ctx.fillStyle = exportPalette.text;
     ctx.fillText(exFitText(ctx, item, W - PAD - cw - PAD - 20), PAD, rowMid + 6);
   }
 
+  /**
+   * Draw a titled, boxed notes block of pre-wrapped lines.
+   * @param {number} y   the block's top, in card coordinates.
+   * @param {number} bh  the block's height in pixels.
+   */
   function drawNotesBlock(ctx, title, lines, y, bh) {
     ctx.textAlign = 'left';
-    ctx.fillStyle = EX.card;
+    ctx.fillStyle = exportPalette.card;
     exRoundRect(ctx, PAD, y, W - PAD * 2, bh, 3);
     ctx.fill();
-    ctx.strokeStyle = EX.border;
+    ctx.strokeStyle = exportPalette.border;
     ctx.stroke();
     ctx.font = '500 12px ' + sans;
-    ctx.fillStyle = EX.muted;
+    ctx.fillStyle = exportPalette.muted;
     ctx.fillText(title.toUpperCase(), PAD + NOTES_TEXT_INSET, y + 32);
     ctx.font = FONT_BODY;
-    ctx.fillStyle = EX.text;
+    ctx.fillStyle = exportPalette.text;
     lines.forEach((ln, i) => ctx.fillText(ln, PAD + NOTES_TEXT_INSET, y + 60 + i * NOTES_LINE_H));
   }
 
@@ -803,9 +909,9 @@ async function exportImage() {
       draw(ctx, y) {
         ctx.textAlign = 'left';
         ctx.font = '26px ' + serif;
-        ctx.fillStyle = EX.accent2;
+        ctx.fillStyle = exportPalette.accent2;
         ctx.fillText(catIcon(sec.id) + '  ' + sec.name, PAD, y + 26);
-        ctx.strokeStyle = EX.border;
+        ctx.strokeStyle = exportPalette.border;
         ctx.beginPath();
         ctx.moveTo(PAD, y + 40);
         ctx.lineTo(W - PAD, y + 40);
@@ -827,9 +933,9 @@ async function exportImage() {
       draw(ctx, y) {
         ctx.textAlign = 'left';
         ctx.font = '26px ' + serif;
-        ctx.fillStyle = EX.limitHead;
+        ctx.fillStyle = exportPalette.limitHead;
         ctx.fillText('⛔  Limits', PAD, y + 26);
-        ctx.strokeStyle = EX.limitRule;
+        ctx.strokeStyle = exportPalette.limitRule;
         ctx.beginPath();
         ctx.moveTo(PAD, y + 40);
         ctx.lineTo(W - PAD, y + 40);
@@ -884,29 +990,29 @@ async function exportImage() {
     ctx.textBaseline = 'alphabetic';
 
     // background
-    ctx.fillStyle = EX.bg;
+    ctx.fillStyle = exportPalette.bg;
     ctx.fillRect(0, 0, W, CARD_H);
     const glow = ctx.createRadialGradient(W * 0.2, 200, 0, W * 0.2, 200, 700);
-    glow.addColorStop(0, EX.glow);
-    glow.addColorStop(1, EX.glowFade);
+    glow.addColorStop(0, exportPalette.glow);
+    glow.addColorStop(1, exportPalette.glowFade);
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, W, CARD_H);
 
     // header (repeated on every card so each one stands alone)
     ctx.textAlign = 'center';
-    ctx.fillStyle = EX.accent3;
+    ctx.fillStyle = exportPalette.accent3;
     ctx.font = '300 40px ' + serif;
     ctx.fillText('Kink Compass', W / 2, 56);
-    ctx.fillStyle = EX.muted;
+    ctx.fillStyle = exportPalette.muted;
     ctx.font = 'italic 300 18px ' + serif;
-    ctx.fillText(S.role || 'Not specified', W / 2, 84);
+    ctx.fillText(state.role || 'Not specified', W / 2, 84);
     if (pages.length > 1) {
       ctx.textAlign = 'right';
       ctx.font = '500 13px ' + sans;
-      ctx.fillStyle = EX.dim;
+      ctx.fillStyle = exportPalette.dim;
       ctx.fillText(`${p + 1} / ${pages.length}`, W - PAD, 56);
     }
-    ctx.strokeStyle = EX.border;
+    ctx.strokeStyle = exportPalette.border;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(PAD, HEADER_H - 20);
@@ -919,7 +1025,7 @@ async function exportImage() {
     // footer
     ctx.textAlign = 'center';
     ctx.font = 'italic 300 14px ' + serif;
-    ctx.fillStyle = EX.dim;
+    ctx.fillStyle = exportPalette.dim;
     ctx.fillText('Created with Kink Compass • ' + dateStr, W / 2, CARD_H - 28);
 
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
@@ -960,18 +1066,21 @@ function tipSpan(text) {
 }
 
 // ============================================================
-// MOBILE TOOLTIPS -- native `title` only shows on desktop hover,
-// so touch devices get a long-press popup instead. A quick tap
-// still falls through to whatever the element normally does
-// (select a role, quick-add on the review screen, etc.) so this
-// never hijacks the existing tap-to-choose interactions.
+// MOBILE TOOLTIPS
 // ============================================================
+// why: native `title` only shows on desktop hover, so touch devices get
+// a long-press popup instead. A quick tap still falls through to whatever
+// the element normally does (select a role, quick-add on the review
+// screen, etc.) so this never hijacks the existing tap-to-choose behavior.
 const TIP_HOLD_MS = 380;
 let tipTimer = null;
 let tipSuppressClick = false;
 let tipPopupEl = null;
 let tipActiveEl = null;
 
+/**
+ * Return the singleton tooltip popup element, creating it on first use.
+ */
 function ensureTipPopup() {
   if (!tipPopupEl) {
     tipPopupEl = document.createElement('div');
@@ -982,6 +1091,11 @@ function ensureTipPopup() {
   return tipPopupEl;
 }
 
+/**
+ * Position the popup below its anchor, flipping above and clamping to
+ * the viewport when it would overflow.
+ * @param {Element} el  the anchor element.
+ */
 function positionTipPopup(el) {
   const pop = tipPopupEl;
   const r = el.getBoundingClientRect();
@@ -998,6 +1112,10 @@ function positionTipPopup(el) {
   pop.style.top = top + 'px';
 }
 
+/**
+ * Show the tooltip popup for an element, reading its `title` text.
+ * @param {Element} el  the long-pressed anchor.
+ */
 function showTipPopup(el) {
   const desc = el.getAttribute('title');
   if (!desc) return;
