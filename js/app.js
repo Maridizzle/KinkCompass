@@ -1,4 +1,13 @@
 // ============================================================
+// app.js  —  wizard state, navigation, screen builders, text
+//            copy, PNG export, and the mobile tooltip popup
+// Exposes (wired from index.html onclick): consentYes, consentNo,
+//   fromRole, fromCategories, fromPass1, fromPass2, fromReview,
+//   backToPass2, goTo, copyResults, exportImage
+// Loads after: data.js (which defines ROLES, CATEGORIES, etc.)
+// ============================================================
+
+// ============================================================
 // STATE
 // ============================================================
 const state = {
@@ -30,6 +39,11 @@ function goTo(id) {
   buildProgressBar(id);
 }
 
+/**
+ * Render the progress dots and step label for one screen.
+ * @param {string} screenId  a key from STEPS.
+ * why: results has no #prog element, so the early return covers it.
+ */
 function buildProgressBar(screenId) {
   const el = document.getElementById('prog-' + screenId);
   if (!el) return;
@@ -60,6 +74,9 @@ function consentNo() {
 // ============================================================
 // ROLE
 // ============================================================
+/**
+ * Build the role-selection list from ROLES, marking the current pick.
+ */
 function buildRoleScreen() {
   const list = document.getElementById('role-list');
   list.innerHTML = '';
@@ -95,6 +112,11 @@ function escHtml(s) {
 
 const CATEGORY_PREVIEW_COUNT = 3;   // item names shown per category row before "+N more"
 
+/**
+ * Build the "first few items + N more" preview line for a category row.
+ * @param {object} cat  a CATEGORIES entry.
+ * @returns {string} HTML string of escaped item names.
+ */
 function buildCatPreview(cat) {
   const shown = cat.items.slice(0, CATEGORY_PREVIEW_COUNT);
   const more = cat.items.length - shown.length;
@@ -103,6 +125,11 @@ function buildCatPreview(cat) {
 }
 
 let catListBound = false;
+/**
+ * Build the category-interest screen and bind its pill clicks once.
+ * why: the click listener is delegated on the list and guarded by
+ *      catListBound so rebuilding the rows never stacks handlers.
+ */
 function buildCatScreen() {
   const list = document.getElementById('cat-list');
   list.innerHTML = '';
@@ -143,6 +170,9 @@ function buildCatScreen() {
   });
 }
 
+/**
+ * Advance from categories to pass 1, requiring one non-none interest.
+ */
 function fromCategories() {
   const active = CATEGORIES.filter(c => state.catInterest[c.id] && state.catInterest[c.id] !== INTEREST_NONE);
   if (active.length === 0) {
@@ -161,6 +191,10 @@ function collectActiveCats() {
 }
 
 let pass1Bound = false;
+/**
+ * Build the direction (give/receive/both/no) screen for active
+ * categories, binding its delegated pill clicks once.
+ */
 function buildPass1() {
   const body = document.getElementById('pass1-body');
   body.innerHTML = '';
@@ -199,6 +233,10 @@ function buildPass1() {
   });
 }
 
+/**
+ * Advance from pass 1 to pass 2, requiring at least one item with a
+ * direction other than "no".
+ */
 function fromPass1() {
   const picked = Object.values(state.itemDir).filter(v => v && v !== DIRECTION_NO);
   if (picked.length === 0) {
@@ -216,6 +254,11 @@ const RATING_MAX   = 5;             // ratings run 1..RATING_MAX
 const RATING_SCALE = [1,2,3,4,5];   // one button / meter segment per step, in order
 
 let pass2Bound = false;
+/**
+ * Build the 1..5 rating screen for every selected item.
+ * why: it walks all categories, not just active ones, because the
+ *      review screen can add items from categories skipped earlier.
+ */
 function buildPass2() {
   const body = document.getElementById('pass2-body');
   body.innerHTML = '';
@@ -282,6 +325,12 @@ function fromPass2() {
 const REVIEW_DIRECTIONS = DIRECTIONS.filter(d => d.val !== DIRECTION_NO);
 
 let reviewBound = false;
+/**
+ * Build the "Are You Sure?" screen: every item NOT yet selected, each
+ * with quick-add, direction, rating, and a hard-limit toggle.
+ * why: hard-limit and quick-add are mutually exclusive, so toggling
+ *      one clears the other's state and its on-classes.
+ */
 function buildReview() {
   const body = document.getElementById('review-body');
   body.innerHTML = '';
@@ -418,8 +467,12 @@ function fromReview() {
 // ============================================================
 // RESULTS
 // ============================================================
-// Collects across ALL categories (not just active ones) so items
-// grabbed on the review screen from skipped categories still count.
+/**
+ * Collect selected items per category, sorted by rating descending.
+ * @returns {Array<{id,name,items:Array<{name,dir,rate}>}>}
+ * why: walks ALL categories, not just active ones, so items grabbed on
+ *      the review screen from skipped categories still count.
+ */
 function collectResults() {
   const out = [];
   CATEGORIES.forEach(cat => {
@@ -439,7 +492,10 @@ function collectResults() {
   return out;
 }
 
-// Items marked "Hard Limit" on the review ("Are You Sure?") screen.
+/**
+ * Collect items marked "Hard Limit" on the review screen, per category.
+ * @returns {Array<{id,name,items:string[]}>}
+ */
 function collectLimits() {
   const out = [];
   CATEGORIES.forEach(cat => {
@@ -449,6 +505,11 @@ function collectLimits() {
   return out;
 }
 
+/**
+ * Render the results screen: summary tiles, a limits section, then one
+ * section per category. Shows an empty-state message when nothing was
+ * selected and no limits were marked.
+ */
 function buildResults() {
   document.getElementById('res-role').textContent = state.role || 'Not specified';
   const body = document.getElementById('res-body');
@@ -535,6 +596,10 @@ function buildResults() {
 // ============================================================
 const BUTTON_CONFIRM_MS = 2600;   // how long "Copied!" / "Downloaded!" stays on the button
 
+/**
+ * Format the current results as plain text and copy to the clipboard,
+ * falling back to a hidden textarea where the Clipboard API is absent.
+ */
 function copyResults() {
   const hardLimits = document.getElementById('hard-limits').value.trim();
   const extraNotes = document.getElementById('extra-notes').value.trim();
@@ -595,6 +660,12 @@ function copyResults() {
   }
 }
 
+/**
+ * Copy text via a temporary textarea and execCommand, for browsers
+ * without navigator.clipboard.
+ * @param {string} text  the text to copy.
+ * @param {Function} cb  called on success.
+ */
 function fallbackCopy(text, cb) {
   const ta = document.createElement('textarea');
   ta.value = text;
@@ -645,6 +716,13 @@ function exRoundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+/**
+ * Word-wrap text to a pixel width using the canvas font metrics.
+ * @param {CanvasRenderingContext2D} ctx  a context with its font set.
+ * @param {string} text  may contain newlines, which force breaks.
+ * @param {number} maxW  max line width in pixels.
+ * @returns {string[]} the wrapped lines.
+ */
 function exWrapText(ctx, text, maxW) {
   const lines = [];
   text.split('\n').forEach(raw => {
@@ -665,6 +743,13 @@ function exWrapText(ctx, text, maxW) {
   return lines;
 }
 
+/**
+ * Truncate text with an ellipsis so it fits within a pixel width.
+ * @param {CanvasRenderingContext2D} ctx  a context with its font set.
+ * @param {string} text  the text to fit.
+ * @param {number} maxW  max width in pixels.
+ * @returns {string} the original text, or a truncated "…" form.
+ */
 function exFitText(ctx, text, maxW) {
   if (ctx.measureText(text).width <= maxW) return text;
   let t = text;
@@ -674,6 +759,14 @@ function exFitText(ctx, text, maxW) {
   return t + '…';
 }
 
+/**
+ * Render the results to phone-sized "story card" PNGs and download them.
+ * Lays content out as fixed-height blocks, paginates them across cards,
+ * then draws and downloads each card in turn.
+ * why: one PNG per card keeps every page readable on a phone without
+ *      zooming; a section header is fused to its first row so a header
+ *      never lands alone at the bottom of a card.
+ */
 async function exportImage() {
   const btn = document.getElementById('export-btn');
   btn.textContent = 'Rendering…';
@@ -709,6 +802,10 @@ async function exportImage() {
   const noteLines = extraNotes ? exWrapText(mctx, extraNotes, W - PAD * 2 - NOTES_WRAP_INSET) : [];
 
   // ---- draw helpers (operate relative to a block's own yTop) ----
+  /**
+   * Draw one result row: name, direction pill, and the 5-segment meter.
+   * @param {number} y  the row's top, in card coordinates.
+   */
   function drawItemRow(ctx, item, y) {
     const rowMid = y + ROW_H / 2;
     ctx.strokeStyle = exportPalette.rowRule;
@@ -753,6 +850,10 @@ async function exportImage() {
     ctx.textAlign = 'left';
   }
 
+  /**
+   * Draw one hard-limit row: item name and its category tag.
+   * @param {number} y  the row's top, in card coordinates.
+   */
   function drawLimitRow(ctx, cat, item, y) {
     const rowMid = y + ROW_H / 2;
     ctx.strokeStyle = exportPalette.limitRowRule;
@@ -777,6 +878,11 @@ async function exportImage() {
     ctx.fillText(exFitText(ctx, item, W - PAD - cw - PAD - 20), PAD, rowMid + 6);
   }
 
+  /**
+   * Draw a titled, boxed notes block of pre-wrapped lines.
+   * @param {number} y   the block's top, in card coordinates.
+   * @param {number} bh  the block's height in pixels.
+   */
   function drawNotesBlock(ctx, title, lines, y, bh) {
     ctx.textAlign = 'left';
     ctx.fillStyle = exportPalette.card;
@@ -960,18 +1066,21 @@ function tipSpan(text) {
 }
 
 // ============================================================
-// MOBILE TOOLTIPS -- native `title` only shows on desktop hover,
-// so touch devices get a long-press popup instead. A quick tap
-// still falls through to whatever the element normally does
-// (select a role, quick-add on the review screen, etc.) so this
-// never hijacks the existing tap-to-choose interactions.
+// MOBILE TOOLTIPS
 // ============================================================
+// why: native `title` only shows on desktop hover, so touch devices get
+// a long-press popup instead. A quick tap still falls through to whatever
+// the element normally does (select a role, quick-add on the review
+// screen, etc.) so this never hijacks the existing tap-to-choose behavior.
 const TIP_HOLD_MS = 380;
 let tipTimer = null;
 let tipSuppressClick = false;
 let tipPopupEl = null;
 let tipActiveEl = null;
 
+/**
+ * Return the singleton tooltip popup element, creating it on first use.
+ */
 function ensureTipPopup() {
   if (!tipPopupEl) {
     tipPopupEl = document.createElement('div');
@@ -982,6 +1091,11 @@ function ensureTipPopup() {
   return tipPopupEl;
 }
 
+/**
+ * Position the popup below its anchor, flipping above and clamping to
+ * the viewport when it would overflow.
+ * @param {Element} el  the anchor element.
+ */
 function positionTipPopup(el) {
   const pop = tipPopupEl;
   const r = el.getBoundingClientRect();
@@ -998,6 +1112,10 @@ function positionTipPopup(el) {
   pop.style.top = top + 'px';
 }
 
+/**
+ * Show the tooltip popup for an element, reading its `title` text.
+ * @param {Element} el  the long-pressed anchor.
+ */
 function showTipPopup(el) {
   const desc = el.getAttribute('title');
   if (!desc) return;

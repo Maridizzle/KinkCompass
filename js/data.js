@@ -1,4 +1,14 @@
 // ============================================================
+// data.js  —  static content the wizard reads: roles, interest
+//             levels, directions, categories + their items,
+//             category icons, and tooltip descriptions
+// Exposes: ROLES, INTEREST_NONE, DIRECTION_NO, DIRECTION_BOTH,
+//   INTEREST_LEVELS, DIRECTIONS, CATEGORIES, CAT_ICONS, catIcon,
+//   TOOLTIPS
+// Loads before: app.js
+// ============================================================
+
+// ============================================================
 // DATA
 // ============================================================
 const ROLES = [
